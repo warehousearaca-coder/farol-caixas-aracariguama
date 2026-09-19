@@ -379,6 +379,16 @@
     <div class="status-msg">Alertas de ruptura são gerados automaticamente quando o saldo fica abaixo do mínimo ou da segurança cadastrados. Alertas de possível perda são criados ao lançar uma movimentação do tipo "Perda".</div>
     <br>
     <div id="alertasTable"><div class="empty">Carregando…</div></div>
+
+    <div class="toolbar" style="margin-top:32px;"><h2>E-mails para notificação de risco de ruptura</h2></div>
+    <div class="status-msg">Todo dia, o sistema confere o estoque de cada caixa e envia um e-mail para os endereços abaixo sempre que o saldo estiver a 30% ou menos do estoque mínimo cadastrado (ou já abaixo dele). Cadastre aqui quem deve receber.</div>
+    <br>
+    <div style="display:flex; gap:8px; max-width:420px; margin-bottom:16px;">
+      <input id="f_novo_email" type="email" placeholder="nome@empresa.com" style="flex:1; padding:9px 12px; border:1px solid var(--border); border-radius:8px; background:var(--surface); color:var(--ink); font-size:14px;">
+      <button class="primary" id="btnAdicionarEmail">Adicionar</button>
+    </div>
+    <div class="status-msg" id="msgEmail"></div>
+    <div id="emailsTable"><div class="empty">Carregando…</div></div>
   </section>
 
 </main>
@@ -524,7 +534,7 @@ async function loadView(view) {
   if (view === 'caixas') return loadCaixas();
   if (view === 'estoque') return loadEstoque();
   if (view === 'movimentacoes') return loadMovimentacoes();
-  if (view === 'alertas') return verificarAlertas();
+  if (view === 'alertas') { verificarAlertas(); loadEmailsDestinatarios(); }
 }
 
 // ---------- Dashboard ----------
@@ -989,6 +999,57 @@ async function verificarAlertas() {
 }
 
 document.getElementById('btnVerificarAlertas').addEventListener('click', verificarAlertas);
+
+// ---------- E-mails para notificação diária ----------
+async function loadEmailsDestinatarios() {
+  try {
+    const emails = await sb('alerta_emails?select=*&ativo=eq.true&order=created_at.asc');
+    if (emails.length === 0) {
+      document.getElementById('emailsTable').innerHTML = '<div class="empty">Nenhum e-mail cadastrado ainda.</div>';
+      return;
+    }
+    document.getElementById('emailsTable').innerHTML = `
+      <table>
+        <thead><tr><th>E-mail</th><th>Cadastrado em</th><th></th></tr></thead>
+        <tbody>
+          ${emails.map(e => `
+            <tr>
+              <td>${e.email}</td>
+              <td>${new Date(e.created_at).toLocaleDateString('pt-BR')}</td>
+              <td><button class="secondary" onclick="removerEmail('${e.id}')">Remover</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('emailsTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('btnAdicionarEmail').addEventListener('click', async () => {
+  const msg = document.getElementById('msgEmail');
+  const input = document.getElementById('f_novo_email');
+  const email = input.value.trim();
+  if (!email || !email.includes('@')) { msg.textContent = 'Informe um e-mail válido.'; msg.className = 'status-msg error'; return; }
+  try {
+    await sb('alerta_emails', { method: 'POST', body: JSON.stringify({ email }) });
+    input.value = '';
+    msg.textContent = 'E-mail adicionado!'; msg.className = 'status-msg ok';
+    loadEmailsDestinatarios();
+  } catch (e) {
+    msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
+  }
+});
+
+async function removerEmail(id) {
+  try {
+    await sb(`alerta_emails?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ ativo: false }) });
+    loadEmailsDestinatarios();
+  } catch (e) {
+    alert('Erro ao remover: ' + e.message);
+  }
+}
 
 // init
 loadDashboard();
