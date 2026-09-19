@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Farol de Caixas — CD Araçariguama</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --surface-2: #f2f1ee;
+    --page: #f9f9f7;
+    --ink: #0b0b0b;
+    --ink-2: #52514e;
+    --muted: #898781;
+    --border: #e1e0d9;
+    --accent: #2a78d6;
+    --good: #0ca30c;
+    --warning: #b8790a;
+    --serious: #ec835a;
+    --critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface: #1a1a19;
+      --surface-2: #232322;
+      --page: #0d0d0d;
+      --ink: #ffffff;
+      --ink-2: #c3c2b7;
+      --muted: #898781;
+      --border: #2c2c2a;
+      --accent: #3987e5;
+      --good: #0ca30c;
+      --warning: #fab219;
+      --serious: #ec835a;
+      --critical: #d03b3b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--ink);
+  }
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  header h1 { font-size: 18px; margin: 0; }
+  header .sub { color: var(--muted); font-size: 13px; }
+  nav {
+    display: flex;
+    gap: 4px;
+    padding: 0 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+  }
+  nav button {
+    border: none;
+    background: transparent;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--ink-2);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+  }
+  nav button.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+  main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+  .view { display: none; }
+  .view.active { display: block; }
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .card .value { font-size: 28px; font-weight: 600; margin-top: 4px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    font-size: 14px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+  tr:last-child td { border-bottom: none; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .badge.good { background: color-mix(in srgb, var(--good) 15%, transparent); color: var(--good); }
+  .badge.warning { background: color-mix(in srgb, var(--warning) 18%, transparent); color: var(--warning); }
+  .badge.serious { background: color-mix(in srgb, var(--serious) 18%, transparent); color: var(--serious); }
+  .badge.critical { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
+  .badge.neutral { background: var(--surface-2); color: var(--muted); }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .toolbar h2 { margin: 0; font-size: 16px; }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    padding: 9px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+  }
+  button.primary:hover { opacity: .9; }
+  .modal-backdrop {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.4);
+    align-items: center; justify-content: center;
+    z-index: 50;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px;
+    width: 420px;
+    max-width: 90vw;
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h3 { margin-top: 0; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+  .field input, .field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--page);
+    color: var(--ink);
+    font-size: 14px;
+  }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  button.secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--ink);
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .empty { color: var(--muted); padding: 24px; text-align: center; }
+  .pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .pill {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 6px 12px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink-2);
+  }
+  .pill.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .status-msg { font-size: 13px; color: var(--muted); margin-top: 8px; }
+  .status-msg.error { color: var(--critical); }
+  .status-msg.ok { color: var(--good); }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Farol de Caixas — CD Araçariguama</h1>
+    <div class="sub">Controle de estoque de caixas de expedição/transporte</div>
+  </div>
+  <div class="sub" id="lastSync">—</div>
+</header>
+
+<nav>
+  <button class="tab active" data-view="dashboard">Dashboard</button>
+  <button class="tab" data-view="caixas">Cadastro de Caixas</button>
+  <button class="tab" data-view="estoque">Estoque Atual</button>
+  <button class="tab" data-view="movimentacoes">Movimentações</button>
+</nav>
+
+<main>
+
+  <!-- DASHBOARD -->
+  <section class="view active" id="view-dashboard">
+    <div class="cards" id="kpiCards"></div>
+    <div class="toolbar"><h2>Semáforo de risco por local</h2></div>
+    <div id="semaforoTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- CADASTRO DE CAIXAS -->
+  <section class="view" id="view-caixas">
+    <div class="toolbar">
+      <h2>Cadastro de Caixas</h2>
+      <button class="primary" id="btnNovaCaixa">+ Nova versão de caixa</button>
+    </div>
+    <div class="status-msg">Edições criam uma nova versão (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
+    <br>
+    <div id="caixasTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- ESTOQUE ATUAL -->
+  <section class="view" id="view-estoque">
+    <div class="toolbar"><h2>Estoque Atual por Local</h2></div>
+    <div id="estoqueTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- MOVIMENTAÇÕES -->
+  <section class="view" id="view-movimentacoes">
+    <div class="toolbar">
+      <h2>Movimentações</h2>
+      <button class="primary" id="btnNovaMov">+ Lançar movimentação</button>
+    </div>
+    <div id="movTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+</main>
+
+<!-- MODAL: nova caixa -->
+<div class="modal-backdrop" id="modalCaixa">
+  <div class="modal">
+    <h3>Nova versão de caixa</h3>
+    <div class="field"><label>SKU</label><input id="f_sku" placeholder="ex: CX-P"></div>
+    <div class="field"><label>Descrição</label><input id="f_descricao" placeholder="ex: Caixa Pequena"></div>
+    <div class="field"><label>Modelo</label><input id="f_modelo" placeholder="opcional"></div>
+    <div class="field"><label>Unidade</label><input id="f_unidade" value="un"></div>
+    <div class="field"><label>Estoque mínimo</label><input id="f_estoque_minimo" type="number" placeholder="deixe em branco se não souber"></div>
+    <div class="field"><label>Estoque de segurança</label><input id="f_estoque_seguranca" type="number" placeholder="deixe em branco se não souber"></div>
+    <div class="field"><label>Lead time (dias)</label><input id="f_lead_time_dias" type="number" placeholder="deixe em branco se não souber"></div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeModal('modalCaixa')">Cancelar</button>
+      <button class="primary" id="btnSalvarCaixa">Salvar</button>
+    </div>
+    <div class="status-msg" id="msgCaixa"></div>
+  </div>
+</div>
+
+<!-- MODAL: nova movimentação -->
+<div class="modal-backdrop" id="modalMov">
+  <div class="modal">
+    <h3>Lançar movimentação</h3>
+    <div class="field"><label>Data</label><input id="m_data" type="date"></div>
+    <div class="field"><label>Caixa (SKU)</label><select id="m_caixa"></select></div>
+    <div class="field"><label>Local</label>
+      <select id="m_local">
+        <option value="CD_SP">CD SP Araçariguama</option>
+        <option value="CD_RJ">CD RJ São João do Meriti</option>
+        <option value="CD_PE">CD PE Pernambuco</option>
+        <option value="DS_POA">Dark Store POA</option>
+        <option value="DS_BSB">Dark Store BSB</option>
+      </select>
+    </div>
+    <div class="field"><label>Tipo</label>
+      <select id="m_tipo">
+        <option value="Entrada">Entrada</option>
+        <option value="Consumo">Consumo (saída)</option>
+        <option value="Ajuste">Ajuste de inventário</option>
+      </select>
+    </div>
+    <div class="field"><label>Quantidade</label><input id="m_qtd" type="number" min="0"></div>
+    <div class="field"><label>Observação</label><input id="m_obs" placeholder="opcional"></div>
+    <div class="modal-actions">
+      <button class="secondary" onclick="closeModal('modalMov')">Cancelar</button>
+      <button class="primary" id="btnSalvarMov">Salvar</button>
+    </div>
+    <div class="status-msg" id="msgMov"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://lqmsgggabzkhhlpqaupq.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_ltaNA7nnVozoSCOcZIjg';
+
+const LOCAIS = {
+  CD_SP: 'CD SP Araçariguama',
+  CD_RJ: 'CD RJ São João do Meriti',
+  CD_PE: 'CD PE Pernambuco',
+  DS_POA: 'Dark Store POA',
+  DS_BSB: 'Dark Store BSB'
+};
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...opts,
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.method === 'POST' ? 'return=representation' : undefined,
+      ...(opts.headers || {})
+    }
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`${res.status}: ${text}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+function fmtNum(n) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('pt-BR');
+}
+
+function daysCoverage(saldo, avgDaily) {
+  if (!avgDaily || avgDaily <= 0) return null;
+  return saldo / avgDaily;
+}
+
+function statusOf(saldo, minimo, seguranca) {
+  if (minimo === null || minimo === undefined || seguranca === null || seguranca === undefined) {
+    return { key: 'neutral', label: 'Sem parâmetro' };
+  }
+  if (saldo <= seguranca) return { key: 'critical', label: 'Crítico' };
+  if (saldo <= minimo) return { key: 'serious', label: 'Abaixo do mínimo' };
+  if (saldo <= minimo * 1.3) return { key: 'warning', label: 'Atenção' };
+  return { key: 'good', label: 'OK' };
+}
+
+// ---------- Navigation ----------
+document.querySelectorAll('nav .tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('nav .tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    loadView(btn.dataset.view);
+  });
+});
+
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+async function loadView(view) {
+  if (view === 'dashboard') return loadDashboard();
+  if (view === 'caixas') return loadCaixas();
+  if (view === 'estoque') return loadEstoque();
+  if (view === 'movimentacoes') return loadMovimentacoes();
+}
+
+// ---------- Dashboard ----------
+async function loadDashboard() {
+  try {
+    const [caixas, estoque] = await Promise.all([
+      sb('caixas_atual?select=id,sku,descricao,estoque_minimo,estoque_seguranca,lead_time_dias'),
+      sb('estoque_atual?select=caixa_id,local_id,saldo,ultima_movimentacao')
+    ]);
+
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const rows = estoque.map(e => {
+      const c = caixaById[e.caixa_id] || {};
+      const status = statusOf(e.saldo, c.estoque_minimo, c.estoque_seguranca);
+      return { ...e, sku: c.sku, descricao: c.descricao, minimo: c.estoque_minimo, seguranca: c.estoque_seguranca, status };
+    });
+
+    const totalSkus = caixas.length;
+    const criticos = rows.filter(r => r.status.key === 'critical').length;
+    const semParam = rows.filter(r => r.status.key === 'neutral').length;
+    const totalSaldo = rows.reduce((s, r) => s + (Number(r.saldo) || 0), 0);
+
+    document.getElementById('kpiCards').innerHTML = `
+      <div class="card"><div class="label">SKUs cadastrados</div><div class="value">${totalSkus}</div></div>
+      <div class="card"><div class="label">Combinações críticas</div><div class="value" style="color:var(--critical)">${criticos}</div></div>
+      <div class="card"><div class="label">Sem parâmetro definido</div><div class="value" style="color:var(--muted)">${semParam}</div></div>
+      <div class="card"><div class="label">Saldo total (unid.)</div><div class="value">${fmtNum(totalSaldo)}</div></div>
+    `;
+
+    if (rows.length === 0) {
+      document.getElementById('semaforoTable').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda. Assim que a planilha de consumo sincronizar (ou uma movimentação for lançada), o estoque aparece aqui.</div>';
+      return;
+    }
+
+    rows.sort((a, b) => (a.status.key === 'critical' ? -1 : 1));
+    document.getElementById('semaforoTable').innerHTML = `
+      <table>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Mínimo</th><th>Segurança</th><th>Status</th></tr></thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td>${r.sku || '—'}</td>
+              <td>${r.descricao || '—'}</td>
+              <td>${LOCAIS[r.local_id] || r.local_id}</td>
+              <td>${fmtNum(r.saldo)}</td>
+              <td>${fmtNum(r.minimo)}</td>
+              <td>${fmtNum(r.seguranca)}</td>
+              <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+    document.getElementById('lastSync').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+  } catch (e) {
+    document.getElementById('semaforoTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+// ---------- Cadastro de Caixas ----------
+async function loadCaixas() {
+  try {
+    const caixas = await sb('caixas_atual?select=*&order=sku.asc');
+    if (caixas.length === 0) {
+      document.getElementById('caixasTable').innerHTML = '<div class="empty">Nenhuma caixa cadastrada.</div>';
+      return;
+    }
+    document.getElementById('caixasTable').innerHTML = `
+      <table>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Modelo</th><th>Unidade</th><th>Mínimo</th><th>Segurança</th><th>Lead time (d)</th></tr></thead>
+        <tbody>
+          ${caixas.map(c => `
+            <tr>
+              <td>${c.sku}</td>
+              <td>${c.descricao || '—'}</td>
+              <td>${c.modelo || '—'}</td>
+              <td>${c.unidade || '—'}</td>
+              <td>${fmtNum(c.estoque_minimo)}</td>
+              <td>${fmtNum(c.estoque_seguranca)}</td>
+              <td>${fmtNum(c.lead_time_dias)}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('caixasTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('btnNovaCaixa').addEventListener('click', () => {
+  ['f_sku','f_descricao','f_modelo','f_estoque_minimo','f_estoque_seguranca','f_lead_time_dias'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f_unidade').value = 'un';
+  document.getElementById('msgCaixa').textContent = '';
+  openModal('modalCaixa');
+});
+
+document.getElementById('btnSalvarCaixa').addEventListener('click', async () => {
+  const msg = document.getElementById('msgCaixa');
+  const sku = document.getElementById('f_sku').value.trim();
+  const descricao = document.getElementById('f_descricao').value.trim();
+  if (!sku || !descricao) { msg.textContent = 'SKU e descrição são obrigatórios.'; msg.className = 'status-msg error'; return; }
+  const body = {
+    sku,
+    descricao,
+    modelo: document.getElementById('f_modelo').value.trim() || null,
+    unidade: document.getElementById('f_unidade').value.trim() || 'un',
+    estoque_minimo: document.getElementById('f_estoque_minimo').value ? Number(document.getElementById('f_estoque_minimo').value) : null,
+    estoque_seguranca: document.getElementById('f_estoque_seguranca').value ? Number(document.getElementById('f_estoque_seguranca').value) : null,
+    lead_time_dias: document.getElementById('f_lead_time_dias').value ? Number(document.getElementById('f_lead_time_dias').value) : null
+  };
+  try {
+    await sb('caixas', { method: 'POST', body: JSON.stringify(body) });
+    msg.textContent = 'Salvo!'; msg.className = 'status-msg ok';
+    setTimeout(() => { closeModal('modalCaixa'); loadCaixas(); }, 500);
+  } catch (e) {
+    msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
+  }
+});
+
+// ---------- Estoque Atual ----------
+async function loadEstoque() {
+  try {
+    const [caixas, estoque] = await Promise.all([
+      sb('caixas_atual?select=id,sku,descricao'),
+      sb('estoque_atual?select=*')
+    ]);
+    if (estoque.length === 0) {
+      document.getElementById('estoqueTable').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda.</div>';
+      return;
+    }
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    document.getElementById('estoqueTable').innerHTML = `
+      <table>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Última movimentação</th></tr></thead>
+        <tbody>
+          ${estoque.map(e => {
+            const c = caixaById[e.caixa_id] || {};
+            return `<tr>
+              <td>${c.sku || '—'}</td>
+              <td>${c.descricao || '—'}</td>
+              <td>${LOCAIS[e.local_id] || e.local_id}</td>
+              <td>${fmtNum(e.saldo)}</td>
+              <td>${e.ultima_movimentacao ? new Date(e.ultima_movimentacao).toLocaleDateString('pt-BR') : '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('estoqueTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+// ---------- Movimentações ----------
+async function loadMovimentacoes() {
+  try {
+    const [caixas, movs] = await Promise.all([
+      sb('caixas_atual?select=id,sku'),
+      sb('movimentacoes?select=*&order=data.desc,created_at.desc&limit=200')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+
+    const sel = document.getElementById('m_caixa');
+    sel.innerHTML = caixas.map(c => `<option value="${c.id}">${c.sku}</option>`).join('');
+
+    if (movs.length === 0) {
+      document.getElementById('movTable').innerHTML = '<div class="empty">Nenhuma movimentação lançada ainda.</div>';
+      return;
+    }
+    document.getElementById('movTable').innerHTML = `
+      <table>
+        <thead><tr><th>Data</th><th>SKU</th><th>Local</th><th>Tipo</th><th>Entrada</th><th>Saída</th><th>Origem</th><th>Obs.</th></tr></thead>
+        <tbody>
+          ${movs.map(m => {
+            const c = caixaById[m.caixa_id] || {};
+            return `<tr>
+              <td>${m.data}</td>
+              <td>${c.sku || '—'}</td>
+              <td>${LOCAIS[m.local_id] || m.local_id}</td>
+              <td>${m.tipo_movimento || '—'}</td>
+              <td>${fmtNum(m.entrada)}</td>
+              <td>${fmtNum(m.saida)}</td>
+              <td>${m.origem || '—'}</td>
+              <td>${m.observacao || '—'}</td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('movTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('btnNovaMov').addEventListener('click', async () => {
+  document.getElementById('m_data').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('m_qtd').value = '';
+  document.getElementById('m_obs').value = '';
+  document.getElementById('msgMov').textContent = '';
+  await loadMovimentacoes();
+  openModal('modalMov');
+});
+
+document.getElementById('btnSalvarMov').addEventListener('click', async () => {
+  const msg = document.getElementById('msgMov');
+  const data = document.getElementById('m_data').value;
+  const caixa_id = document.getElementById('m_caixa').value;
+  const local_id = document.getElementById('m_local').value;
+  const tipo = document.getElementById('m_tipo').value;
+  const qtd = Number(document.getElementById('m_qtd').value);
+  const obs = document.getElementById('m_obs').value.trim() || null;
+  if (!data || !caixa_id || !qtd || qtd <= 0) { msg.textContent = 'Preencha data, caixa e quantidade válida.'; msg.className = 'status-msg error'; return; }
+
+  const body = {
+    data, caixa_id, local_id,
+    tipo_movimento: tipo,
+    entrada: tipo === 'Entrada' ? qtd : 0,
+    saida: tipo === 'Consumo' ? qtd : (tipo === 'Ajuste' ? 0 : 0),
+    origem: 'dashboard_manual',
+    observacao: obs
+  };
+  // Ajuste de inventário: quantidade digitada é o saldo contado, tratado como observação (ajuste manual não infere saldo atual aqui no MVP)
+  if (tipo === 'Ajuste') {
+    body.observacao = `Ajuste de inventário — contagem: ${qtd}. ${obs || ''}`.trim();
+  }
+
+  try {
+    await sb('movimentacoes', { method: 'POST', body: JSON.stringify(body) });
+    msg.textContent = 'Salvo!'; msg.className = 'status-msg ok';
+    setTimeout(() => { closeModal('modalMov'); loadMovimentacoes(); loadEstoque(); }, 500);
+  } catch (e) {
+    msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
+  }
+});
+
+// init
+loadDashboard();
+</script>
+
+</body>
+</html>
