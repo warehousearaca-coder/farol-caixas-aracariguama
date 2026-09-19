@@ -210,6 +210,9 @@
   <button class="tab" data-view="caixas">Cadastro de Caixas</button>
   <button class="tab" data-view="estoque">Estoque Atual</button>
   <button class="tab" data-view="movimentacoes">Movimentações</button>
+  <button class="tab" data-view="importar">Importar Excel</button>
+  <button class="tab" data-view="relatorios">Relatórios</button>
+  <button class="tab" data-view="alertas">Alertas</button>
 </nav>
 
 <main>
@@ -245,6 +248,49 @@
       <button class="primary" id="btnNovaMov">+ Lançar movimentação</button>
     </div>
     <div id="movTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- IMPORTAR EXCEL -->
+  <section class="view" id="view-importar">
+    <div class="toolbar"><h2>Importar Consumo via Excel</h2></div>
+    <div class="status-msg">O arquivo deve ter colunas: DATA, LOCAL, CX P, CX M, CX G, CX GG (mesmo layout da planilha Google). Linhas com local não reconhecido são ignoradas e listadas abaixo. Nada é gravado até você confirmar a importação.</div>
+    <br>
+    <input type="file" id="fileExcel" accept=".xlsx,.xls">
+    <div id="importPreview" style="margin-top:16px;"></div>
+  </section>
+
+  <!-- RELATÓRIOS -->
+  <section class="view" id="view-relatorios">
+    <div class="toolbar"><h2>Relatórios</h2></div>
+    <div class="cards">
+      <div class="card">
+        <div class="label">Estoque atual</div>
+        <div style="font-size:14px; margin-top:4px;">Saldo por local e SKU</div>
+        <br><button class="primary" id="btnExportEstoque">Baixar .xlsx</button>
+      </div>
+      <div class="card">
+        <div class="label">Movimentações</div>
+        <div style="font-size:14px; margin-top:4px;">Histórico completo</div>
+        <br><button class="primary" id="btnExportMov">Baixar .xlsx</button>
+      </div>
+      <div class="card">
+        <div class="label">Consumo diário</div>
+        <div style="font-size:14px; margin-top:4px;">Série consolidada</div>
+        <br><button class="primary" id="btnExportConsumo">Baixar .xlsx</button>
+      </div>
+    </div>
+    <div class="status-msg" id="msgRelatorios"></div>
+  </section>
+
+  <!-- ALERTAS -->
+  <section class="view" id="view-alertas">
+    <div class="toolbar">
+      <h2>Alertas</h2>
+      <button class="secondary" id="btnVerificarAlertas">Verificar agora</button>
+    </div>
+    <div class="status-msg">Alertas de ruptura são gerados automaticamente quando o saldo fica abaixo do mínimo ou da segurança cadastrados. Alertas de possível perda são criados ao lançar uma movimentação do tipo "Perda".</div>
+    <br>
+    <div id="alertasTable"><div class="empty">Carregando…</div></div>
   </section>
 
 </main>
@@ -287,6 +333,7 @@
       <select id="m_tipo">
         <option value="Entrada">Entrada</option>
         <option value="Consumo">Consumo (saída)</option>
+        <option value="Perda">Perda (possível extravio/dano)</option>
         <option value="Ajuste">Ajuste de inventário</option>
       </select>
     </div>
@@ -300,6 +347,7 @@
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://lqmsgggabzkhhlpqaupq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BFbQ9ebONlSEPYdTPXOilQ_3XOXs23A';
@@ -311,6 +359,22 @@ const LOCAIS = {
   DS_POA: 'Dark Store POA',
   DS_BSB: 'Dark Store BSB'
 };
+
+// Mesmo mapeamento usado no sync da planilha Google (Apps Script), para manter consistência
+const LOCAL_MAP = {
+  'CDSP': 'CD_SP', 'CDSPARACARIGUAMA': 'CD_SP',
+  'CDRJ': 'CD_RJ', 'CDRJSAOJOAODOMERITI': 'CD_RJ',
+  'CDPE': 'CD_PE', 'CDPEPERNAMBUCO': 'CD_PE',
+  'DSPOA': 'DS_POA', 'DARKSTOREPOA': 'DS_POA',
+  'DSBSB': 'DS_BSB', 'DARKSTOREBSB': 'DS_BSB'
+};
+function normalizaLocal(texto) {
+  const limpo = (texto || '').toString().toUpperCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Z]/g, '');
+  return LOCAL_MAP[limpo] || null;
+}
+const SKU_POR_COLUNA = { 'CX P': 'CX-P', 'CX M': 'CX-M', 'CX G': 'CX-G', 'CX GG': 'CX-GG' };
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -370,6 +434,7 @@ async function loadView(view) {
   if (view === 'caixas') return loadCaixas();
   if (view === 'estoque') return loadEstoque();
   if (view === 'movimentacoes') return loadMovimentacoes();
+  if (view === 'alertas') return verificarAlertas();
 }
 
 // ---------- Dashboard ----------
@@ -588,7 +653,7 @@ document.getElementById('btnSalvarMov').addEventListener('click', async () => {
     data, caixa_id, local_id,
     tipo_movimento: tipo,
     entrada: tipo === 'Entrada' ? qtd : 0,
-    saida: tipo === 'Consumo' ? qtd : (tipo === 'Ajuste' ? 0 : 0),
+    saida: (tipo === 'Consumo' || tipo === 'Perda') ? qtd : 0,
     origem: 'dashboard_manual',
     observacao: obs
   };
@@ -599,12 +664,241 @@ document.getElementById('btnSalvarMov').addEventListener('click', async () => {
 
   try {
     await sb('movimentacoes', { method: 'POST', body: JSON.stringify(body) });
+    if (tipo === 'Perda') {
+      const skuLabel = document.getElementById('m_caixa').selectedOptions[0].textContent;
+      try {
+        await sb('alertas', { method: 'POST', body: JSON.stringify({
+          caixa_id, local_id, tipo: 'perda', severidade: 'atencao',
+          mensagem: `Possível perda registrada: ${skuLabel} em ${LOCAIS[local_id] || local_id}, quantidade ${qtd} em ${data}.${obs ? ' ' + obs : ''}`,
+          acao_recomendada: 'Investigar causa (extravio, avaria ou divergência de contagem).'
+        })});
+      } catch (e) { /* não bloqueia o lançamento se o alerta falhar */ }
+    }
     msg.textContent = 'Salvo!'; msg.className = 'status-msg ok';
     setTimeout(() => { closeModal('modalMov'); loadMovimentacoes(); loadEstoque(); }, 500);
   } catch (e) {
     msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
   }
 });
+
+// ---------- Importar Excel ----------
+let _importParsed = [];
+document.getElementById('fileExcel').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const prev = document.getElementById('importPreview');
+  prev.innerHTML = '<div class="empty">Lendo arquivo…</div>';
+  try {
+    const caixas = await sb('caixas_atual?select=id,sku');
+    const caixaIdBySku = Object.fromEntries(caixas.map(c => [c.sku, c.id]));
+
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    const parsed = [];
+    const erros = [];
+    rows.forEach((r, idx) => {
+      const dataRaw = r['DATA'] ?? r['Data'] ?? r['data'];
+      const localRaw = r['LOCAL'] ?? r['Local'] ?? r['local'];
+      if (!dataRaw || !localRaw) return;
+      let dataStr;
+      if (dataRaw instanceof Date) dataStr = dataRaw.toISOString().slice(0, 10);
+      else dataStr = String(dataRaw).trim();
+      const localId = normalizaLocal(localRaw);
+      if (!localId) { erros.push(`Linha ${idx + 2}: local "${localRaw}" não reconhecido.`); return; }
+      Object.entries(SKU_POR_COLUNA).forEach(([col, sku]) => {
+        const raw = r[col];
+        const qtd = Number(raw);
+        if (raw !== '' && raw !== undefined && raw !== null && !isNaN(qtd) && qtd > 0) {
+          const caixa_id = caixaIdBySku[sku];
+          if (!caixa_id) { erros.push(`Linha ${idx + 2}: SKU ${sku} não cadastrado.`); return; }
+          parsed.push({ data: dataStr, local_id: localId, sku, caixa_id, quantidade: qtd, observacao: r['OBSERVACAO'] || r['Observacao'] || null });
+        }
+      });
+    });
+
+    _importParsed = parsed;
+    let html = `<div class="status-msg">${parsed.length} lançamento(s) prontos para importar${erros.length ? ', ' + erros.length + ' linha(s) com erro (ignoradas)' : ''}.</div>`;
+    if (erros.length) html += `<div class="status-msg error">${erros.join('<br>')}</div>`;
+    if (parsed.length) {
+      html += `<br><table><thead><tr><th>Data</th><th>Local</th><th>SKU</th><th>Qtd</th></tr></thead><tbody>
+        ${parsed.slice(0, 50).map(p => `<tr><td>${p.data}</td><td>${LOCAIS[p.local_id]}</td><td>${p.sku}</td><td>${fmtNum(p.quantidade)}</td></tr>`).join('')}
+      </tbody></table>${parsed.length > 50 ? `<div class="status-msg">Mostrando 50 de ${parsed.length}.</div>` : ''}
+      <br><button class="primary" id="btnConfirmarImport">Confirmar importação (${parsed.length})</button>`;
+    }
+    prev.innerHTML = html;
+    if (parsed.length) document.getElementById('btnConfirmarImport').addEventListener('click', confirmarImport);
+  } catch (e) {
+    prev.innerHTML = `<div class="empty">Erro ao ler arquivo: ${e.message}</div>`;
+  }
+});
+
+async function confirmarImport() {
+  const prev = document.getElementById('importPreview');
+  const parsed = _importParsed;
+  let ok = 0, fail = 0;
+  prev.innerHTML = `<div class="empty">Importando 0 / ${parsed.length}…</div>`;
+  for (const p of parsed) {
+    try {
+      const mov = await sb('movimentacoes', { method: 'POST', body: JSON.stringify({
+        data: p.data, caixa_id: p.caixa_id, local_id: p.local_id,
+        tipo_movimento: 'Consumo', entrada: 0, saida: p.quantidade,
+        origem: 'excel_upload', observacao: p.observacao
+      })});
+      const movId = Array.isArray(mov) ? mov[0].id : mov.id;
+      await sb('consumo_diario', { method: 'POST', body: JSON.stringify({
+        data: p.data, local_id: p.local_id, caixa_id: p.caixa_id,
+        quantidade: p.quantidade, fonte: 'excel_upload', processado: true,
+        movimentacao_id: movId
+      })});
+      ok++;
+    } catch (e) { fail++; }
+    prev.innerHTML = `<div class="empty">Importando ${ok + fail} / ${parsed.length}…</div>`;
+  }
+  prev.innerHTML = `<div class="status-msg ok">Importação concluída: ${ok} lançamento(s) gravados${fail ? ', ' + fail + ' com erro' : ''}.</div>`;
+  document.getElementById('fileExcel').value = '';
+  _importParsed = [];
+  loadEstoque(); loadDashboard();
+}
+
+// ---------- Relatórios ----------
+function downloadXlsx(filename, rows) {
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+  XLSX.writeFile(wb, filename);
+}
+
+document.getElementById('btnExportEstoque').addEventListener('click', async () => {
+  const msg = document.getElementById('msgRelatorios');
+  msg.textContent = ''; msg.className = 'status-msg';
+  try {
+    const [caixas, estoque] = await Promise.all([
+      sb('caixas_atual?select=id,sku,descricao'),
+      sb('estoque_atual?select=*')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const rows = estoque.map(e => {
+      const c = caixaById[e.caixa_id] || {};
+      return { SKU: c.sku || '', Descricao: c.descricao || '', Local: LOCAIS[e.local_id] || e.local_id, Saldo: e.saldo, UltimaMovimentacao: e.ultima_movimentacao || '' };
+    });
+    if (rows.length === 0) { msg.textContent = 'Nenhum dado de estoque para exportar ainda.'; return; }
+    downloadXlsx('estoque_atual.xlsx', rows);
+  } catch (e) { msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error'; }
+});
+
+document.getElementById('btnExportMov').addEventListener('click', async () => {
+  const msg = document.getElementById('msgRelatorios');
+  msg.textContent = ''; msg.className = 'status-msg';
+  try {
+    const [caixas, movs] = await Promise.all([
+      sb('caixas_atual?select=id,sku'),
+      sb('movimentacoes?select=*&order=data.desc')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const rows = movs.map(m => ({
+      Data: m.data, SKU: (caixaById[m.caixa_id] || {}).sku || '', Local: LOCAIS[m.local_id] || m.local_id,
+      Tipo: m.tipo_movimento, Entrada: m.entrada, Saida: m.saida, Origem: m.origem || '', Observacao: m.observacao || ''
+    }));
+    if (rows.length === 0) { msg.textContent = 'Nenhuma movimentação para exportar ainda.'; return; }
+    downloadXlsx('movimentacoes.xlsx', rows);
+  } catch (e) { msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error'; }
+});
+
+document.getElementById('btnExportConsumo').addEventListener('click', async () => {
+  const msg = document.getElementById('msgRelatorios');
+  msg.textContent = ''; msg.className = 'status-msg';
+  try {
+    const [caixas, consumo] = await Promise.all([
+      sb('caixas_atual?select=id,sku'),
+      sb('consumo_diario?select=*&order=data.desc')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const rows = consumo.map(c2 => ({
+      Data: c2.data, SKU: (caixaById[c2.caixa_id] || {}).sku || '', Local: LOCAIS[c2.local_id] || c2.local_id,
+      Quantidade: c2.quantidade, Fonte: c2.fonte || ''
+    }));
+    if (rows.length === 0) { msg.textContent = 'Nenhum consumo diário para exportar ainda.'; return; }
+    downloadXlsx('consumo_diario.xlsx', rows);
+  } catch (e) { msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error'; }
+});
+
+// ---------- Alertas ----------
+async function loadAlertas() {
+  try {
+    const alertas = await sb('alertas?select=*&status=eq.aberto&order=criado_em.desc');
+    if (alertas.length === 0) {
+      document.getElementById('alertasTable').innerHTML = '<div class="empty">Nenhum alerta aberto no momento.</div>';
+      return;
+    }
+    document.getElementById('alertasTable').innerHTML = `
+      <table>
+        <thead><tr><th>Criado em</th><th>Severidade</th><th>Tipo</th><th>Mensagem</th><th>Ação recomendada</th><th></th></tr></thead>
+        <tbody>
+          ${alertas.map(a => `
+            <tr>
+              <td>${new Date(a.criado_em).toLocaleString('pt-BR')}</td>
+              <td><span class="badge ${a.severidade === 'critico' ? 'critical' : a.severidade === 'atencao' ? 'warning' : 'neutral'}">${a.severidade}</span></td>
+              <td>${a.tipo}</td>
+              <td>${a.mensagem}</td>
+              <td>${a.acao_recomendada || '—'}</td>
+              <td><button class="secondary" onclick="resolverAlerta('${a.id}')">Resolver</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  } catch (e) {
+    document.getElementById('alertasTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+async function resolverAlerta(id) {
+  try {
+    await sb(`alertas?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'resolvido', resolvido_em: new Date().toISOString() }) });
+    loadAlertas();
+  } catch (e) {
+    alert('Erro ao resolver alerta: ' + e.message);
+  }
+}
+
+async function verificarAlertas() {
+  try {
+    const [caixas, estoque, abertos] = await Promise.all([
+      sb('caixas_atual?select=id,sku,descricao,estoque_minimo,estoque_seguranca'),
+      sb('estoque_atual?select=*'),
+      sb('alertas?select=caixa_id,local_id,tipo&status=eq.aberto')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const jaAlertado = new Set(abertos.map(a => `${a.caixa_id}|${a.local_id}|${a.tipo}`));
+    const novos = [];
+    estoque.forEach(e => {
+      const c = caixaById[e.caixa_id];
+      if (!c || c.estoque_minimo == null || c.estoque_seguranca == null) return;
+      const key = `${e.caixa_id}|${e.local_id}|ruptura`;
+      if (jaAlertado.has(key)) return;
+      if (e.saldo <= c.estoque_seguranca) {
+        novos.push({ caixa_id: e.caixa_id, local_id: e.local_id, tipo: 'ruptura', severidade: 'critico',
+          mensagem: `${c.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do estoque de segurança (${fmtNum(c.estoque_seguranca)}).`,
+          acao_recomendada: 'Repor com urgência / acionar fornecedor.' });
+      } else if (e.saldo <= c.estoque_minimo) {
+        novos.push({ caixa_id: e.caixa_id, local_id: e.local_id, tipo: 'ruptura', severidade: 'atencao',
+          mensagem: `${c.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do mínimo (${fmtNum(c.estoque_minimo)}).`,
+          acao_recomendada: 'Planejar reposição.' });
+      }
+    });
+    for (const n of novos) {
+      try { await sb('alertas', { method: 'POST', body: JSON.stringify(n) }); } catch (e) { /* ignora falha pontual */ }
+    }
+    loadAlertas();
+  } catch (e) {
+    document.getElementById('alertasTable').innerHTML = `<div class="empty">Erro ao verificar: ${e.message}</div>`;
+  }
+}
+
+document.getElementById('btnVerificarAlertas').addEventListener('click', verificarAlertas);
 
 // init
 loadDashboard();
