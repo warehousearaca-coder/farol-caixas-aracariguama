@@ -318,7 +318,7 @@
       <h2>Cadastro de Caixas</h2>
       <button class="primary" id="btnNovaCaixa">+ Nova versão de caixa</button>
     </div>
-    <div class="status-msg">Edições criam uma nova versão (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
+    <div class="status-msg">O estoque mínimo e de segurança são definidos por SKU + Local, já que cada unidade (SP, RJ, PE, POA, BSB) pode ter uma necessidade diferente. Edições criam uma nova versão para aquele SKU+Local (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
     <br>
     <div id="caixasTable"><div class="empty">Carregando…</div></div>
   </section>
@@ -401,8 +401,18 @@
     <h3>Nova versão de caixa</h3>
     <div class="field"><label>SKU</label><input id="f_sku" placeholder="ex: CX-P"></div>
     <div class="field"><label>Descrição</label><input id="f_descricao" placeholder="ex: Caixa Pequena"></div>
+    <div class="field"><label>Local (unidade de distribuição)</label>
+      <select id="f_local">
+        <option value="">Selecione o local…</option>
+        <option value="CD_SP">CD SP Araçariguama</option>
+        <option value="CD_RJ">CD RJ São João do Meriti</option>
+        <option value="CD_PE">CD PE Pernambuco</option>
+        <option value="DS_POA">Dark Store POA</option>
+        <option value="DS_BSB">Dark Store BSB</option>
+      </select>
+    </div>
     <div class="field"><label>Modelo</label><input id="f_modelo" placeholder="opcional"></div>
-    <div class="field"><label>Unidade</label><input id="f_unidade" value="un"></div>
+    <div class="field"><label>Unidade de medida</label><input id="f_unidade" value="un"></div>
     <div class="field"><label>Estoque mínimo</label><input id="f_estoque_minimo" type="number" placeholder="deixe em branco se não souber"></div>
     <div class="field"><label>Estoque de segurança</label><input id="f_estoque_seguranca" type="number" placeholder="deixe em branco se não souber"></div>
     <div class="field"><label>Lead time (dias)</label><input id="f_lead_time_dias" type="number" placeholder="deixe em branco se não souber"></div>
@@ -540,19 +550,18 @@ async function loadView(view) {
 // ---------- Dashboard ----------
 async function loadDashboard() {
   try {
-    const [caixas, estoque] = await Promise.all([
-      sb('caixas_atual?select=id,sku,descricao,estoque_minimo,estoque_seguranca,lead_time_dias'),
-      sb('estoque_atual?select=caixa_id,local_id,saldo,ultima_movimentacao')
+    const [caixas, status] = await Promise.all([
+      sb('caixas_atual?select=id,sku'),
+      sb('estoque_status?select=*')
     ]);
 
-    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
-    const rows = estoque.map(e => {
-      const c = caixaById[e.caixa_id] || {};
-      const status = statusOf(e.saldo, c.estoque_minimo, c.estoque_seguranca);
-      return { ...e, sku: c.sku, descricao: c.descricao, minimo: c.estoque_minimo, seguranca: c.estoque_seguranca, status };
+    // estoque_status já resolve o mínimo/segurança por SKU+Local (com fallback pro valor global enquanto o SKU não é migrado)
+    const rows = status.map(e => {
+      const s = statusOf(e.saldo, e.estoque_minimo, e.estoque_seguranca);
+      return { ...e, minimo: e.estoque_minimo, seguranca: e.estoque_seguranca, status: s };
     });
 
-    const totalSkus = caixas.length;
+    const totalSkus = new Set(caixas.map(c => c.sku)).size;
     const criticos = rows.filter(r => r.status.key === 'critical').length;
     const semParam = rows.filter(r => r.status.key === 'neutral').length;
     const totalSaldo = rows.reduce((s, r) => s + (Number(r.saldo) || 0), 0);
@@ -595,26 +604,33 @@ async function loadDashboard() {
 }
 
 // ---------- Cadastro de Caixas ----------
+let _caixasCache = [];
 async function loadCaixas() {
   try {
-    const caixas = await sb('caixas_atual?select=*&order=sku.asc');
+    const caixas = await sb('caixas_atual?select=*&order=sku.asc,local_id.asc');
     if (caixas.length === 0) {
       document.getElementById('caixasTable').innerHTML = '<div class="empty">Nenhuma caixa cadastrada.</div>';
       return;
     }
+    // SKUs já migrados para um local específico não precisam mais exibir a linha antiga "sem local" (mantida no banco só por histórico).
+    const skusComLocal = new Set(caixas.filter(c => c.local_id).map(c => c.sku));
+    const visiveis = caixas.filter(c => c.local_id || !skusComLocal.has(c.sku));
+    _caixasCache = visiveis;
     document.getElementById('caixasTable').innerHTML = `
       <table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Modelo</th><th>Unidade</th><th>Mínimo</th><th>Segurança</th><th>Lead time (d)</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Modelo</th><th>Unidade</th><th>Mínimo</th><th>Segurança</th><th>Lead time (d)</th><th></th></tr></thead>
         <tbody>
-          ${caixas.map(c => `
+          ${visiveis.map((c, i) => `
             <tr>
               <td>${c.sku}</td>
               <td>${c.descricao || '—'}</td>
+              <td>${c.local_id ? (LOCAIS[c.local_id] || c.local_id) : '<span class="badge neutral">a definir</span>'}</td>
               <td>${c.modelo || '—'}</td>
               <td>${c.unidade || '—'}</td>
               <td>${fmtNum(c.estoque_minimo)}</td>
               <td>${fmtNum(c.estoque_seguranca)}</td>
               <td>${fmtNum(c.lead_time_dias)}</td>
+              <td><button class="secondary" onclick="editarCaixa(_caixasCache[${i}])">Editar</button></td>
             </tr>
           `).join('')}
         </tbody>
@@ -628,18 +644,35 @@ async function loadCaixas() {
 document.getElementById('btnNovaCaixa').addEventListener('click', () => {
   ['f_sku','f_descricao','f_modelo','f_estoque_minimo','f_estoque_seguranca','f_lead_time_dias'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f_unidade').value = 'un';
+  document.getElementById('f_local').value = '';
   document.getElementById('msgCaixa').textContent = '';
   openModal('modalCaixa');
 });
+
+function editarCaixa(c) {
+  document.getElementById('f_sku').value = c.sku || '';
+  document.getElementById('f_descricao').value = c.descricao || '';
+  document.getElementById('f_modelo').value = c.modelo || '';
+  document.getElementById('f_unidade').value = c.unidade || 'un';
+  document.getElementById('f_local').value = c.local_id || '';
+  document.getElementById('f_estoque_minimo').value = c.estoque_minimo ?? '';
+  document.getElementById('f_estoque_seguranca').value = c.estoque_seguranca ?? '';
+  document.getElementById('f_lead_time_dias').value = c.lead_time_dias ?? '';
+  document.getElementById('msgCaixa').textContent = '';
+  openModal('modalCaixa');
+}
 
 document.getElementById('btnSalvarCaixa').addEventListener('click', async () => {
   const msg = document.getElementById('msgCaixa');
   const sku = document.getElementById('f_sku').value.trim();
   const descricao = document.getElementById('f_descricao').value.trim();
+  const local_id = document.getElementById('f_local').value;
   if (!sku || !descricao) { msg.textContent = 'SKU e descrição são obrigatórios.'; msg.className = 'status-msg error'; return; }
+  if (!local_id) { msg.textContent = 'Selecione o local (unidade de distribuição).'; msg.className = 'status-msg error'; return; }
   const body = {
     sku,
     descricao,
+    local_id,
     modelo: document.getElementById('f_modelo').value.trim() || null,
     unidade: document.getElementById('f_unidade').value.trim() || 'un',
     estoque_minimo: document.getElementById('f_estoque_minimo').value ? Number(document.getElementById('f_estoque_minimo').value) : null,
@@ -698,8 +731,12 @@ async function loadMovimentacoes() {
     ]);
     const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
 
+    // Um SKU pode ter uma versão por Local; para o lançamento de movimentação o local é escolhido à parte (campo Local),
+    // então a lista de caixas mostra cada SKU uma única vez.
+    const idPorSku = new Map();
+    caixas.forEach(c => { if (!idPorSku.has(c.sku)) idPorSku.set(c.sku, c.id); });
     const sel = document.getElementById('m_caixa');
-    sel.innerHTML = caixas.map(c => `<option value="${c.id}">${c.sku}</option>`).join('');
+    sel.innerHTML = Array.from(idPorSku.entries()).map(([sku, id]) => `<option value="${id}">${sku}</option>`).join('');
 
     if (movs.length === 0) {
       document.getElementById('movTable').innerHTML = '<div class="empty">Nenhuma movimentação lançada ainda.</div>';
@@ -966,26 +1003,23 @@ async function resolverAlerta(id) {
 
 async function verificarAlertas() {
   try {
-    const [caixas, estoque, abertos] = await Promise.all([
-      sb('caixas_atual?select=id,sku,descricao,estoque_minimo,estoque_seguranca'),
-      sb('estoque_atual?select=*'),
+    const [estoque, abertos] = await Promise.all([
+      sb('estoque_status?select=*'),
       sb('alertas?select=caixa_id,local_id,tipo&status=eq.aberto')
     ]);
-    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
     const jaAlertado = new Set(abertos.map(a => `${a.caixa_id}|${a.local_id}|${a.tipo}`));
     const novos = [];
     estoque.forEach(e => {
-      const c = caixaById[e.caixa_id];
-      if (!c || c.estoque_minimo == null || c.estoque_seguranca == null) return;
+      if (e.estoque_minimo == null || e.estoque_seguranca == null) return;
       const key = `${e.caixa_id}|${e.local_id}|ruptura`;
       if (jaAlertado.has(key)) return;
-      if (e.saldo <= c.estoque_seguranca) {
+      if (e.saldo <= e.estoque_seguranca) {
         novos.push({ caixa_id: e.caixa_id, local_id: e.local_id, tipo: 'ruptura', severidade: 'critico',
-          mensagem: `${c.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do estoque de segurança (${fmtNum(c.estoque_seguranca)}).`,
+          mensagem: `${e.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do estoque de segurança (${fmtNum(e.estoque_seguranca)}).`,
           acao_recomendada: 'Repor com urgência / acionar fornecedor.' });
-      } else if (e.saldo <= c.estoque_minimo) {
+      } else if (e.saldo <= e.estoque_minimo) {
         novos.push({ caixa_id: e.caixa_id, local_id: e.local_id, tipo: 'ruptura', severidade: 'atencao',
-          mensagem: `${c.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do mínimo (${fmtNum(c.estoque_minimo)}).`,
+          mensagem: `${e.sku} em ${LOCAIS[e.local_id] || e.local_id}: saldo ${fmtNum(e.saldo)} abaixo do mínimo (${fmtNum(e.estoque_minimo)}).`,
           acao_recomendada: 'Planejar reposição.' });
       }
     });
