@@ -205,6 +205,45 @@
   .badge.serious { background: color-mix(in srgb, var(--serious) 18%, transparent); color: var(--serious); }
   .badge.critical { background: color-mix(in srgb, var(--critical) 15%, transparent); color: var(--critical); }
   .badge.neutral { background: var(--surface-2); color: var(--muted); }
+  .global-health {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px; font-size: 13px; font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .global-health::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+  .global-health.good { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+  .global-health.warning { background: color-mix(in srgb, var(--warning) 16%, transparent); color: var(--warning); }
+  .global-health.serious { background: color-mix(in srgb, var(--serious) 16%, transparent); color: var(--serious); }
+  .global-health.critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
+  .global-health.neutral { background: var(--surface-2); color: var(--muted); }
+  .unit-panels {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .unit-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 4px solid var(--muted);
+    border-radius: 14px;
+    padding: 16px 18px 14px;
+    box-shadow: 0 1px 2px rgba(20,18,14,.03);
+  }
+  .unit-panel.critical { border-top-color: var(--critical); }
+  .unit-panel.serious { border-top-color: var(--serious); }
+  .unit-panel.warning { border-top-color: var(--warning); }
+  .unit-panel.good { border-top-color: var(--good); }
+  .unit-panel.neutral { border-top-color: var(--muted); }
+  .unit-panel h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .unit-panel .unit-sub { font-size: 11.5px; color: var(--muted); margin: 3px 0 12px; }
+  .unit-panel .sku-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .unit-panel .sku-row:last-child { border-bottom: none; }
+  .unit-panel .sku-row .sku-name { font-weight: 600; }
+  .unit-panel .sku-row .sku-saldo { color: var(--muted); font-size: 12px; }
   .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; gap: 12px; flex-wrap: wrap; }
   .toolbar h2 { margin: 0; font-size: 17px; font-weight: 700; }
   button.primary {
@@ -307,8 +346,11 @@
 
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
+    <div id="globalHealth"></div>
     <div class="cards" id="kpiCards"></div>
-    <div class="toolbar"><h2>Semáforo de risco por local</h2></div>
+    <div class="toolbar"><h2>Saúde por unidade</h2></div>
+    <div class="unit-panels" id="unidadePanels"></div>
+    <div class="toolbar"><h2>Detalhamento completo (todas as combinações)</h2></div>
     <div id="semaforoTable"><div class="empty">Carregando…</div></div>
   </section>
 
@@ -548,6 +590,15 @@ async function loadView(view) {
 }
 
 // ---------- Dashboard ----------
+const SEVERITY = { critical: 4, serious: 3, warning: 2, neutral: 1, good: 0 };
+const GLOBAL_HEALTH_LABEL = {
+  critical: 'Crítico — ação imediata necessária',
+  serious: 'Abaixo do mínimo em uma ou mais unidades',
+  warning: 'Atenção em uma ou mais unidades',
+  neutral: 'Parâmetros pendentes de definição',
+  good: 'Operação saudável — todos os estoques OK'
+};
+
 async function loadDashboard() {
   try {
     const [caixas, status] = await Promise.all([
@@ -572,6 +623,60 @@ async function loadDashboard() {
       <div class="card"><div class="icon-badge" style="background:var(--surface-2); color:var(--muted)">⚙</div><div class="label">Sem parâmetro definido</div><div class="value" style="color:var(--muted)">${semParam}</div></div>
       <div class="card"><div class="icon-badge">▥</div><div class="label">Saldo total (unid.)</div><div class="value">${fmtNum(totalSaldo)}</div></div>
     `;
+
+    // ---- Saúde global (pior status entre todas as combinações SKU+Local) ----
+    const globalKey = rows.length
+      ? rows.reduce((worst, r) => SEVERITY[r.status.key] > SEVERITY[worst] ? r.status.key : worst, 'good')
+      : 'neutral';
+    document.getElementById('globalHealth').innerHTML = rows.length
+      ? `<span class="global-health ${globalKey}">Saúde global: ${GLOBAL_HEALTH_LABEL[globalKey]}</span>`
+      : '';
+
+    // ---- Saúde por unidade ----
+    const locaisOrdenados = Object.keys(LOCAIS);
+    const extras = [...new Set(rows.map(r => r.local_id).filter(l => !locaisOrdenados.includes(l)))];
+    const unidadesPanelsHtml = [...locaisOrdenados, ...extras].map(localId => {
+      const nome = LOCAIS[localId] || localId || 'Sem local definido';
+      const rowsUnidade = rows.filter(r => r.local_id === localId).sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
+
+      if (rowsUnidade.length === 0) {
+        return `
+          <div class="unit-panel neutral">
+            <h3>${nome}</h3>
+            <div class="unit-sub">Nenhuma caixa cadastrada nesta unidade</div>
+          </div>`;
+      }
+
+      const worst = rowsUnidade.reduce((w, r) => SEVERITY[r.status.key] > SEVERITY[w] ? r.status.key : w, 'good');
+      const nCritico = rowsUnidade.filter(r => r.status.key === 'critical').length;
+      const nSerio = rowsUnidade.filter(r => r.status.key === 'serious').length;
+      const nAtencao = rowsUnidade.filter(r => r.status.key === 'warning').length;
+      const nOk = rowsUnidade.filter(r => r.status.key === 'good').length;
+      const nSemParam = rowsUnidade.filter(r => r.status.key === 'neutral').length;
+      const resumoPartes = [
+        nCritico && `${nCritico} crítico${nCritico > 1 ? 's' : ''}`,
+        nSerio && `${nSerio} abaixo do mínimo`,
+        nAtencao && `${nAtencao} em atenção`,
+        nOk && `${nOk} ok`,
+        nSemParam && `${nSemParam} sem parâmetro`
+      ].filter(Boolean).join(' · ');
+
+      return `
+        <div class="unit-panel ${worst}">
+          <h3>${nome} <span class="badge ${worst}">${rowsUnidade.length} SKU${rowsUnidade.length > 1 ? 's' : ''}</span></h3>
+          <div class="unit-sub">${resumoPartes}</div>
+          ${rowsUnidade.map(r => `
+            <div class="sku-row">
+              <span class="sku-name">${r.sku || '—'}<br><span class="sku-saldo">${r.descricao || ''}</span></span>
+              <span style="text-align:right">
+                <span class="badge ${r.status.key}">${r.status.label}</span><br>
+                <span class="sku-saldo">Saldo: ${fmtNum(r.saldo)}</span>
+              </span>
+            </div>
+          `).join('')}
+        </div>`;
+    }).join('');
+    document.getElementById('unidadePanels').innerHTML = unidadesPanelsHtml;
 
     if (rows.length === 0) {
       document.getElementById('semaforoTable').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda. Assim que a planilha de consumo sincronizar (ou uma movimentação for lançada), o estoque aparece aqui.</div>';
