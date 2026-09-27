@@ -1078,11 +1078,18 @@ document.getElementById('fileEstoqueSnapshot').addEventListener('change', async 
     _importEstoqueHash = hash;
 
     const [caixas, estoqueAtual] = await Promise.all([
-      sb('caixas_atual?select=id,sku'),
+      sb('caixas_atual?select=id,sku,local_id'),
       sb('estoque_atual?select=caixa_id,local_id,saldo')
     ]);
-    const caixaIdBySku = {};
-    caixas.forEach(c => { caixaIdBySku[(c.sku || '').toString().trim().toUpperCase()] = c.id; });
+    // Um SKU pode ter uma versão de cadastro por Local (mínimo/segurança diferentes por unidade);
+    // por isso a busca do caixa_id prioriza SKU+Local e só cai para SKU sozinho nas linhas antigas sem local definido.
+    const caixaIdBySkuLocal = {};
+    const caixaIdBySkuFallback = {};
+    caixas.forEach(c => {
+      const skuKey = (c.sku || '').toString().trim().toUpperCase();
+      if (c.local_id) caixaIdBySkuLocal[`${skuKey}|${c.local_id}`] = c.id;
+      else if (!(skuKey in caixaIdBySkuFallback)) caixaIdBySkuFallback[skuKey] = c.id;
+    });
     const saldoAnteriorMap = {};
     estoqueAtual.forEach(e => { saldoAnteriorMap[`${e.caixa_id}|${e.local_id}`] = Number(e.saldo) || 0; });
 
@@ -1104,8 +1111,8 @@ document.getElementById('fileEstoqueSnapshot').addEventListener('change', async 
       const localId = normalizaLocal(localRaw);
       if (!localId) { erros.push(`Linha ${idx + 2}: local "${localRaw}" não reconhecido.`); return; }
       const sku = String(skuRaw).trim().toUpperCase();
-      const caixa_id = caixaIdBySku[sku];
-      if (!caixa_id) { erros.push(`Linha ${idx + 2}: SKU "${skuRaw}" não cadastrado.`); return; }
+      const caixa_id = caixaIdBySkuLocal[`${sku}|${localId}`] || caixaIdBySkuFallback[sku];
+      if (!caixa_id) { erros.push(`Linha ${idx + 2}: SKU "${skuRaw}" não cadastrado para o local "${localRaw}".`); return; }
       const saldoAtual = Number(estoqueRaw);
       if (estoqueRaw === '' || isNaN(saldoAtual)) { erros.push(`Linha ${idx + 2}: estoque inválido para ${sku}.`); return; }
       const key = `${caixa_id}|${localId}`;
