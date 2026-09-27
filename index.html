@@ -1345,14 +1345,14 @@ async function renderChartsDashboard(rowsFiltradas) {
     const consumo = await sb(`consumo_diario?select=data,quantidade&data=gte.${diasAtras(30)}&order=data.asc`);
     destroyChart(_chartConsumoLinha);
     if (!consumo.length) {
-      wrapLinha.parentElement.querySelector('.chart-wrap').style.display = 'none';
-      if (!wrapLinha.parentElement.querySelector('.chart-empty')) wrapLinha.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo registrado nos últimos 30 dias ainda.</div>');
+      wrapLinha.closest('.chart-card').querySelector('.chart-wrap').style.display = 'none';
+      if (!wrapLinha.closest('.chart-card').querySelector('.chart-empty')) wrapLinha.closest('.chart-card').insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo registrado nos últimos 30 dias ainda.</div>');
     } else {
       const porDia = {};
       consumo.forEach(c => { porDia[c.data] = (porDia[c.data] || 0) + Number(c.quantidade || 0); });
       const labels = Object.keys(porDia).sort();
-      wrapLinha.parentElement.querySelector('.chart-wrap').style.display = '';
-      const oldEmpty = wrapLinha.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+      wrapLinha.closest('.chart-card').querySelector('.chart-wrap').style.display = '';
+      const oldEmpty = wrapLinha.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
       _chartConsumoLinha = new Chart(wrapLinha, {
         type: 'line',
         data: { labels: labels.map(d => d.slice(5)), datasets: [{ label: 'Consumo', data: labels.map(d => porDia[d]), borderColor: '#c69a4b', backgroundColor: 'rgba(198,154,75,.15)', fill: true, tension: .25 }] },
@@ -1373,11 +1373,11 @@ async function renderChartsDashboard(rowsFiltradas) {
     consumo.forEach(c => { const cat = catById[c.caixa_id] || 'CAIXAS'; porCategoria[cat] = (porCategoria[cat] || 0) + Number(c.quantidade || 0); });
     const cats = Object.keys(porCategoria);
     if (!cats.length) {
-      wrapDonut.parentElement.querySelector('.chart-wrap').style.display = 'none';
-      if (!wrapDonut.parentElement.querySelector('.chart-empty')) wrapDonut.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo por categoria ainda.</div>');
+      wrapDonut.closest('.chart-card').querySelector('.chart-wrap').style.display = 'none';
+      if (!wrapDonut.closest('.chart-card').querySelector('.chart-empty')) wrapDonut.closest('.chart-card').insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo por categoria ainda.</div>');
     } else {
-      wrapDonut.parentElement.querySelector('.chart-wrap').style.display = '';
-      const oldEmpty = wrapDonut.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+      wrapDonut.closest('.chart-card').querySelector('.chart-wrap').style.display = '';
+      const oldEmpty = wrapDonut.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
       _chartConsumoDonut = new Chart(wrapDonut, {
         type: 'doughnut',
         data: { labels: cats, datasets: [{ data: cats.map(c => porCategoria[c]), backgroundColor: ['#c69a4b', '#2a78d6', '#0ca30c', '#ec835a', '#d03b3b', '#8b8983'] }] },
@@ -1393,11 +1393,11 @@ async function renderChartsDashboard(rowsFiltradas) {
   rowsFiltradas.forEach(r => { if (r.local_id) porUnidade[r.local_id] = (porUnidade[r.local_id] || 0) + (Number(r.saldo) || 0); });
   const unidadesComDado = Object.keys(porUnidade).filter(u => porUnidade[u] !== 0);
   if (!unidadesComDado.length) {
-    wrapBarra.parentElement.querySelector('.chart-wrap').style.display = 'none';
-    if (!wrapBarra.parentElement.querySelector('.chart-empty')) wrapBarra.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem saldo de estoque ainda.</div>');
+    wrapBarra.closest('.chart-card').querySelector('.chart-wrap').style.display = 'none';
+    if (!wrapBarra.closest('.chart-card').querySelector('.chart-empty')) wrapBarra.closest('.chart-card').insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem saldo de estoque ainda.</div>');
   } else {
-    wrapBarra.parentElement.querySelector('.chart-wrap').style.display = '';
-    const oldEmpty = wrapBarra.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+    wrapBarra.closest('.chart-card').querySelector('.chart-wrap').style.display = '';
+    const oldEmpty = wrapBarra.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
     _chartEstoqueBarra = new Chart(wrapBarra, {
       type: 'bar',
       data: { labels: Object.keys(porUnidade).map(l => LOCAIS[l]), datasets: [{ label: 'Saldo', data: Object.values(porUnidade), backgroundColor: '#2a78d6' }] },
