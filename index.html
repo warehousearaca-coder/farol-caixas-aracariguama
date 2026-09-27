@@ -331,7 +331,7 @@
   </div>
   <nav>
     <button class="tab active" data-view="dashboard"><span class="ic">◧</span>Dashboard</button>
-    <button class="tab" data-view="caixas"><span class="ic">▢</span>Cadastro de Caixas</button>
+    <button class="tab" data-view="caixas"><span class="ic">▢</span>Cadastro de Materiais</button>
     <button class="tab" data-view="estoque"><span class="ic">▤</span>Estoque Atual</button>
     <button class="tab" data-view="movimentacoes"><span class="ic">⇄</span>Movimentações</button>
     <button class="tab" data-view="importar"><span class="ic">⇧</span>Importar Excel</button>
@@ -366,10 +366,10 @@
   <!-- CADASTRO DE CAIXAS -->
   <section class="view" id="view-caixas">
     <div class="toolbar">
-      <h2>Cadastro de Caixas</h2>
-      <button class="primary" id="btnNovaCaixa">+ Nova versão de caixa</button>
+      <h2>Cadastro de Materiais</h2>
+      <button class="primary" id="btnNovaCaixa">+ Nova versão de material</button>
     </div>
-    <div class="status-msg">O estoque mínimo e de segurança são definidos por SKU + Local, já que cada unidade (SP, RJ, PE, POA, BSB) pode ter uma necessidade diferente. Edições criam uma nova versão para aquele SKU+Local (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
+    <div class="status-msg">Além de caixas, o cadastro admite qualquer categoria de material (fitas, etiquetas, outros). O estoque mínimo e de segurança são definidos por SKU + Local, já que cada unidade (SP, RJ, PE, POA, BSB) pode ter uma necessidade diferente. Edições criam uma nova versão para aquele SKU+Local (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
     <br>
     <div id="caixasTable"><div class="empty">Carregando…</div></div>
   </section>
@@ -461,6 +461,15 @@
     <h3>Nova versão de caixa</h3>
     <div class="field"><label>SKU</label><input id="f_sku" placeholder="ex: CX-P"></div>
     <div class="field"><label>Descrição</label><input id="f_descricao" placeholder="ex: Caixa Pequena"></div>
+    <div class="field"><label>Categoria</label>
+      <select id="f_categoria">
+        <option value="CAIXAS">Caixas</option>
+        <option value="FITAS">Fitas</option>
+        <option value="ETIQUETAS">Etiquetas</option>
+        <option value="OUTROS">Outros</option>
+      </select>
+    </div>
+    <div class="field"><label>Subcategoria</label><input id="f_subcategoria" placeholder="opcional"></div>
     <div class="field"><label>Local (unidade de distribuição)</label>
       <select id="f_local">
         <option value="">Selecione o local…</option>
@@ -797,12 +806,13 @@ async function loadCaixas() {
     _caixasCache = visiveis;
     document.getElementById('caixasTable').innerHTML = `
       <table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Modelo</th><th>Unidade</th><th>Mínimo</th><th>Segurança</th><th>Lead time (d)</th><th></th></tr></thead>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Categoria</th><th>Local</th><th>Modelo</th><th>Unidade</th><th>Mínimo</th><th>Segurança</th><th>Lead time (d)</th><th></th></tr></thead>
         <tbody>
           ${visiveis.map((c, i) => `
             <tr>
               <td>${c.sku}</td>
               <td>${c.descricao || '—'}</td>
+              <td>${c.categoria || 'CAIXAS'}${c.subcategoria ? ' / ' + c.subcategoria : ''}</td>
               <td>${c.local_id ? (LOCAIS[c.local_id] || c.local_id) : '<span class="badge neutral">a definir</span>'}</td>
               <td>${c.modelo || '—'}</td>
               <td>${c.unidade || '—'}</td>
@@ -821,8 +831,9 @@ async function loadCaixas() {
 }
 
 document.getElementById('btnNovaCaixa').addEventListener('click', () => {
-  ['f_sku','f_descricao','f_modelo','f_estoque_minimo','f_estoque_seguranca','f_lead_time_dias'].forEach(id => document.getElementById(id).value = '');
+  ['f_sku','f_descricao','f_subcategoria','f_modelo','f_estoque_minimo','f_estoque_seguranca','f_lead_time_dias'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('f_unidade').value = 'un';
+  document.getElementById('f_categoria').value = 'CAIXAS';
   document.getElementById('f_local').value = '';
   document.getElementById('msgCaixa').textContent = '';
   openModal('modalCaixa');
@@ -831,6 +842,8 @@ document.getElementById('btnNovaCaixa').addEventListener('click', () => {
 function editarCaixa(c) {
   document.getElementById('f_sku').value = c.sku || '';
   document.getElementById('f_descricao').value = c.descricao || '';
+  document.getElementById('f_categoria').value = c.categoria || 'CAIXAS';
+  document.getElementById('f_subcategoria').value = c.subcategoria || '';
   document.getElementById('f_modelo').value = c.modelo || '';
   document.getElementById('f_unidade').value = c.unidade || 'un';
   document.getElementById('f_local').value = c.local_id || '';
@@ -852,6 +865,8 @@ document.getElementById('btnSalvarCaixa').addEventListener('click', async () => 
     sku,
     descricao,
     local_id,
+    categoria: document.getElementById('f_categoria').value || 'CAIXAS',
+    subcategoria: document.getElementById('f_subcategoria').value.trim() || null,
     modelo: document.getElementById('f_modelo').value.trim() || null,
     unidade: document.getElementById('f_unidade').value.trim() || 'un',
     estoque_minimo: document.getElementById('f_estoque_minimo').value ? Number(document.getElementById('f_estoque_minimo').value) : null,
