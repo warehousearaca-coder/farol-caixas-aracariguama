@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Farol de Caixas — CD Araçariguama</title>
+<title>InsumosLog — CD Araçariguama</title>
 <style>
   :root {
     color-scheme: light;
@@ -25,7 +25,7 @@
     --sidebar-muted: #948d80;
     --gold: #c69a4b;
     --gold-ink: #7a5c1e;
-    --sidebar-w: 232px;
+    --sidebar-w: 246px;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -93,9 +93,11 @@
     padding: 14px 12px;
     flex: 1;
   }
-  nav button {
+  .nav-group { display: flex; flex-direction: column; }
+  .nav-group-head {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
     border: none;
     background: transparent;
@@ -106,14 +108,55 @@
     border-radius: 8px;
     text-align: left;
     white-space: nowrap;
+    width: 100%;
+  }
+  .nav-group-head:hover { background: rgba(255,255,255,.05); color: var(--sidebar-ink); }
+  .nav-group-head .ic { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  .nav-group-head .lbl { flex: 1; display: flex; align-items: center; gap: 10px; }
+  .nav-group-head .chev { font-size: 10px; transition: transform .15s; opacity: .7; }
+  .nav-group.open .nav-group-head .chev { transform: rotate(90deg); }
+  .nav-group.has-active > .nav-group-head { color: var(--gold); }
+  .nav-sub {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 0;
+    overflow: hidden;
+    padding-left: 30px;
+  }
+  .nav-group.open .nav-sub { max-height: 600px; padding-top: 2px; padding-bottom: 6px; }
+  nav button.tab, .nav-sub button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: none;
+    background: transparent;
+    padding: 9px 12px;
+    font-size: 13px;
+    color: var(--sidebar-muted);
+    cursor: pointer;
+    border-radius: 7px;
+    text-align: left;
+    white-space: nowrap;
     border-left: 3px solid transparent;
   }
-  nav button .ic { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
-  nav button:hover { background: rgba(255,255,255,.05); color: var(--sidebar-ink); }
-  nav button.active {
+  nav button.tab { padding: 10px 12px; font-size: 13.5px; }
+  nav button.tab .ic { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
+  nav button.tab:hover, .nav-sub button:hover { background: rgba(255,255,255,.05); color: var(--sidebar-ink); }
+  nav button.tab.active, .nav-sub button.active {
     background: rgba(198,154,75,.14);
     color: var(--gold);
     font-weight: 600;
+  }
+  .nav-badge-soon {
+    margin-left: auto;
+    font-size: 9.5px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--sidebar-muted);
+    background: rgba(255,255,255,.06);
+    padding: 2px 6px;
+    border-radius: 999px;
   }
   .sidebar-foot {
     padding: 16px 20px;
@@ -128,15 +171,76 @@
   header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 18px 28px;
+    padding: 14px 28px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 20;
   }
-  header h1 { font-size: 19px; margin: 0; font-weight: 700; }
-  header .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  header .hdr-left { display: flex; flex-direction: column; gap: 2px; min-width: 180px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 700; }
+  header .sub { color: var(--muted); font-size: 12.5px; }
+  header .hdr-center {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: center;
+  }
+  #globalSearch {
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--page);
+    color: var(--ink);
+    font-size: 13px;
+    width: 220px;
+    max-width: 40vw;
+  }
+  .date-range { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  .date-range input[type=date] {
+    padding: 7px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--page);
+    color: var(--ink);
+    font-size: 12.5px;
+  }
+  header .hdr-right { display: flex; align-items: center; gap: 12px; }
+  .bell-btn {
+    position: relative;
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink-2);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 15px;
+  }
+  .bell-btn .dot {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--critical); color: #fff;
+    font-size: 10px; font-weight: 700;
+    min-width: 16px; height: 16px; border-radius: 999px;
+    display: flex; align-items: center; justify-content: center;
+    padding: 0 3px;
+  }
+  .user-pill {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px 6px 6px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .user-pill .avatar {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--sidebar-bg); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
   header .sync-pill {
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -145,7 +249,7 @@
     font-size: 12.5px;
     color: var(--ink-2);
   }
-  main { padding: 28px; max-width: 1280px; width: 100%; margin: 0 auto; }
+  main { padding: 28px; max-width: 1320px; width: 100%; margin: 0 auto; }
   .view { display: none; }
   .view.active { display: block; }
   .cards {
@@ -172,6 +276,10 @@
   }
   .card .label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
   .card .value { font-size: 26px; font-weight: 700; margin-top: 6px; }
+  .card .delta { font-size: 12px; margin-top: 6px; font-weight: 600; }
+  .card .delta.up { color: var(--good); }
+  .card .delta.down { color: var(--critical); }
+  .card .delta.flat { color: var(--muted); }
   table {
     width: 100%;
     border-collapse: collapse;
@@ -216,6 +324,55 @@
   .global-health.serious { background: color-mix(in srgb, var(--serious) 16%, transparent); color: var(--serious); }
   .global-health.critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
   .global-health.neutral { background: var(--surface-2); color: var(--muted); }
+  .unit-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .unit-tabs button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 7px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink-2);
+    font-weight: 500;
+  }
+  .unit-tabs button.active { background: var(--sidebar-bg); color: var(--gold); border-color: var(--sidebar-bg); font-weight: 700; }
+  .charts-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+    margin-bottom: 28px;
+    align-items: stretch;
+  }
+  .charts-row.two-even { grid-template-columns: 1fr 1fr; }
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(20,18,14,.03);
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+  .chart-card h3 { margin: 0 0 12px; font-size: 14.5px; font-weight: 700; }
+  .chart-card .chart-wrap { position: relative; height: 220px; }
+  .chart-card .chart-empty { color: var(--muted); font-size: 13px; text-align: center; padding: 40px 10px; }
+  .risk-map-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    box-shadow: 0 1px 2px rgba(20,18,14,.03);
+  }
+  .risk-map-panel h3 { margin: 0 0 4px; font-size: 14.5px; font-weight: 700; }
+  .risk-map-panel .hint { font-size: 11.5px; color: var(--muted); margin-bottom: 14px; }
+  .risk-map-grid { display: flex; flex-direction: column; gap: 10px; }
+  .risk-map-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 12px; border-radius: 10px; background: var(--surface-2);
+  }
+  .risk-map-row .rm-name { font-size: 13px; font-weight: 600; }
+  .risk-map-row .rm-count { font-size: 11.5px; color: var(--muted); }
+  .risk-map-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
   .unit-panels {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(270px, 1fr));
@@ -265,6 +422,7 @@
     font-weight: 600;
   }
   button.primary:hover { opacity: .88; }
+  button.primary:disabled { opacity: .5; cursor: not-allowed; }
   .modal-backdrop {
     display: none;
     position: fixed; inset: 0;
@@ -319,6 +477,40 @@
   .status-msg { font-size: 13px; color: var(--muted); margin-top: 8px; }
   .status-msg.error { color: var(--critical); }
   .status-msg.ok { color: var(--good); }
+  .soon-panel {
+    background: var(--surface);
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    padding: 56px 32px;
+    text-align: center;
+  }
+  .soon-panel .soon-ic {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: color-mix(in srgb, var(--gold) 16%, transparent);
+    color: var(--gold-ink);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 18px;
+  }
+  .soon-panel h2 { margin: 0 0 8px; font-size: 18px; }
+  .soon-panel p { margin: 0 auto; max-width: 480px; color: var(--muted); font-size: 13.5px; line-height: 1.6; }
+  .soon-panel .soon-tag {
+    display: inline-block; margin-top: 16px;
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--gold-ink); background: color-mix(in srgb, var(--gold) 14%, transparent);
+    padding: 4px 12px; border-radius: 999px; font-weight: 700;
+  }
+  .subnav-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .subnav-tabs button {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    padding: 7px 13px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--ink-2);
+  }
+  .subnav-tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 600; }
 </style>
 </head>
 <body>
@@ -326,44 +518,139 @@
 <div class="app-shell">
 <aside class="sidebar">
   <div class="brand">
-    <div class="wordmark">NESPRESSO</div>
-    <div class="tagline">Farol de Caixas<br>CD Araçariguama</div>
+    <div class="wordmark">INSUMOSLOG</div>
+    <div class="tagline">Controle de Insumos Logísticos<br>CD Araçariguama</div>
   </div>
-  <nav>
-    <button class="tab active" data-view="dashboard"><span class="ic">◧</span>Dashboard</button>
-    <button class="tab" data-view="caixas"><span class="ic">▢</span>Cadastro de Materiais</button>
-    <button class="tab" data-view="estoque"><span class="ic">▤</span>Estoque Atual</button>
-    <button class="tab" data-view="movimentacoes"><span class="ic">⇄</span>Movimentações</button>
-    <button class="tab" data-view="importar"><span class="ic">⇧</span>Importar Excel</button>
-    <button class="tab" data-view="importar-estoque"><span class="ic">⇩</span>Importar Estoque (Snapshot)</button>
+  <nav id="mainNav">
+    <button class="tab" data-view="dashboard"><span class="ic">◧</span>Dashboard</button>
+
+    <div class="nav-group" data-group="estoque">
+      <button class="nav-group-head"><span class="lbl"><span class="ic">▤</span>Estoque</span><span class="chev">▸</span></button>
+      <div class="nav-sub">
+        <button data-view="estoque">Estoque Atual</button>
+        <button data-view="movimentacoes">Movimentações</button>
+        <button data-view="transferencias">Transferências <span class="nav-badge-soon">em breve</span></button>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="consumo">
+      <button class="nav-group-head"><span class="lbl"><span class="ic">∿</span>Consumo</span><span class="chev">▸</span></button>
+      <div class="nav-sub">
+        <button data-view="consumo-diario">Diário</button>
+        <button data-view="consumo-semanal">Semanal</button>
+        <button data-view="consumo-mensal">Mensal</button>
+        <button data-view="consumo-tendencias">Tendências</button>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="planejamento">
+      <button class="nav-group-head"><span class="lbl"><span class="ic">◎</span>Planejamento</span><span class="chev">▸</span></button>
+      <div class="nav-sub">
+        <button data-view="planejamento-cobertura">Cobertura</button>
+        <button data-view="planejamento-ponto-pedido">Ponto de Pedido</button>
+        <button data-view="planejamento-seguranca">Estoque de Segurança</button>
+        <button data-view="planejamento-ruptura">Previsão de Ruptura</button>
+        <button data-view="planejamento-sugestao">Sugestão de Compra</button>
+      </div>
+    </div>
+
+    <div class="nav-group" data-group="materiais">
+      <button class="nav-group-head"><span class="lbl"><span class="ic">▢</span>Materiais</span><span class="chev">▸</span></button>
+      <div class="nav-sub">
+        <button data-view="caixas">Cadastro</button>
+        <button data-view="materiais-categorias">Categorias</button>
+        <button data-view="materiais-parametros">Parâmetros <span class="nav-badge-soon">em breve</span></button>
+      </div>
+    </div>
+
+    <button class="tab" data-view="fornecedores"><span class="ic">✦</span>Fornecedores <span class="nav-badge-soon">em breve</span></button>
+    <button class="tab" data-view="compras"><span class="ic">⛁</span>Compras <span class="nav-badge-soon">em breve</span></button>
+
+    <div class="nav-group" data-group="importacao">
+      <button class="nav-group-head"><span class="lbl"><span class="ic">⇩</span>Importação de Planilha</span><span class="chev">▸</span></button>
+      <div class="nav-sub">
+        <button data-view="importar-estoque">Estoque (Snapshot)</button>
+        <button data-view="importar">Consumo (Excel legado)</button>
+      </div>
+    </div>
+
     <button class="tab" data-view="relatorios"><span class="ic">▥</span>Relatórios</button>
     <button class="tab" data-view="alertas"><span class="ic">▲</span>Alertas</button>
+    <button class="tab" data-view="configuracoes"><span class="ic">⚙</span>Configurações</button>
   </nav>
-  <div class="sidebar-foot">Controle de estoque de caixas de expedição/transporte</div>
+  <div class="sidebar-foot">Controle de insumos logísticos (caixas, fitas, etiquetas e outros)</div>
 </aside>
 
 <div class="content-col">
 <header>
-  <div>
-    <h1>Farol de Caixas — CD Araçariguama</h1>
-    <div class="sub">Controle de estoque de caixas de expedição/transporte</div>
+  <div class="hdr-left">
+    <h1>InsumosLog</h1>
+    <div class="sub">CD Araçariguama</div>
   </div>
-  <div class="sync-pill" id="lastSync">—</div>
+  <div class="hdr-center">
+    <input type="text" id="globalSearch" placeholder="Buscar SKU, descrição…">
+    <div class="date-range">
+      <span>Período:</span>
+      <input type="date" id="dateFrom">
+      <span>–</span>
+      <input type="date" id="dateTo">
+    </div>
+  </div>
+  <div class="hdr-right">
+    <button class="bell-btn" id="btnBell" title="Alertas em aberto" onclick="irParaAlertas()">🔔<span class="dot" id="bellCount" style="display:none">0</span></button>
+    <div class="user-pill"><span class="avatar">CD</span>CD Araçariguama</div>
+    <div class="sync-pill" id="lastSync">—</div>
+  </div>
 </header>
 
 <main>
 
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
+    <div class="unit-tabs" id="dashboardUnitTabs"></div>
     <div id="globalHealth"></div>
     <div class="cards" id="kpiCards"></div>
+
+    <div class="charts-row">
+      <div class="chart-card">
+        <h3>Consumo — últimos 30 dias</h3>
+        <div class="chart-wrap"><canvas id="chartConsumoLinha"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Consumo por categoria</h3>
+        <div class="chart-wrap"><canvas id="chartConsumoDonut"></canvas></div>
+      </div>
+    </div>
+
+    <div class="charts-row two-even">
+      <div class="chart-card">
+        <h3>Estoque por unidade</h3>
+        <div class="chart-wrap"><canvas id="chartEstoqueBarra"></canvas></div>
+      </div>
+      <div class="risk-map-panel">
+        <h3>Panorama de risco por unidade</h3>
+        <div class="hint">Visão simplificada por unidade (não representa um mapa geográfico preciso).</div>
+        <div class="risk-map-grid" id="riskMapGrid"></div>
+      </div>
+    </div>
+
     <div class="toolbar"><h2>Saúde por unidade</h2></div>
     <div class="unit-panels" id="unidadePanels"></div>
-    <div class="toolbar"><h2>Detalhamento completo (todas as combinações)</h2></div>
+
+    <div class="toolbar"><h2>Materiais com maior risco de ruptura</h2></div>
+    <div id="tabelaMaiorRisco"><div class="empty">Carregando…</div></div>
+
+    <div class="toolbar" style="margin-top:28px;"><h2>Top materiais consumidos</h2></div>
+    <div id="tabelaTopConsumo"><div class="empty">Carregando…</div></div>
+
+    <div class="toolbar" style="margin-top:28px;"><h2>Sugestão de reposição</h2></div>
+    <div id="tabelaSugestaoReposicao"><div class="empty">Carregando…</div></div>
+
+    <div class="toolbar" style="margin-top:28px;"><h2>Detalhamento completo (todas as combinações)</h2></div>
     <div id="semaforoTable"><div class="empty">Carregando…</div></div>
   </section>
 
-  <!-- CADASTRO DE CAIXAS -->
+  <!-- CADASTRO DE MATERIAIS -->
   <section class="view" id="view-caixas">
     <div class="toolbar">
       <h2>Cadastro de Materiais</h2>
@@ -372,6 +659,24 @@
     <div class="status-msg">Além de caixas, o cadastro admite qualquer categoria de material (fitas, etiquetas, outros). O estoque mínimo e de segurança são definidos por SKU + Local, já que cada unidade (SP, RJ, PE, POA, BSB) pode ter uma necessidade diferente. Edições criam uma nova versão para aquele SKU+Local (histórico é preservado; a mais recente vale). Deixe um campo em branco se ainda não tiver o dado real — não preenchemos números fictícios.</div>
     <br>
     <div id="caixasTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- MATERIAIS > CATEGORIAS -->
+  <section class="view" id="view-materiais-categorias">
+    <div class="toolbar"><h2>Materiais por Categoria</h2></div>
+    <div class="status-msg">Agregado calculado a partir do cadastro de materiais e do saldo atual — sem números inventados.</div>
+    <br>
+    <div id="categoriasTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- MATERIAIS > PARÂMETROS (em breve) -->
+  <section class="view" id="view-materiais-parametros">
+    <div class="soon-panel">
+      <div class="soon-ic">⚙</div>
+      <h2>Parâmetros de Materiais</h2>
+      <p>Regras avançadas de parametrização por material (lote econômico, curva ABC, revisão automática de mínimos) ainda não foram construídas neste sistema.</p>
+      <span class="soon-tag">Em breve — Fase 2</span>
+    </div>
   </section>
 
   <!-- ESTOQUE ATUAL -->
@@ -389,9 +694,108 @@
     <div id="movTable"><div class="empty">Carregando…</div></div>
   </section>
 
+  <!-- TRANSFERÊNCIAS (em breve) -->
+  <section class="view" id="view-transferencias">
+    <div class="soon-panel">
+      <div class="soon-ic">⇄</div>
+      <h2>Transferências entre Unidades</h2>
+      <p>O módulo de transferência de estoque entre centros de distribuição e dark stores ainda não foi construído neste sistema.</p>
+      <span class="soon-tag">Em breve — Fase 2</span>
+    </div>
+  </section>
+
+  <!-- CONSUMO: DIÁRIO -->
+  <section class="view" id="view-consumo-diario">
+    <div class="toolbar"><h2>Consumo Diário</h2></div>
+    <div class="chart-card" style="margin-bottom:22px;"><h3>Últimos 30 dias</h3><div class="chart-wrap"><canvas id="chartConsumoDiarioDetalhe"></canvas></div></div>
+    <div id="consumoDiarioTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- CONSUMO: SEMANAL -->
+  <section class="view" id="view-consumo-semanal">
+    <div class="toolbar"><h2>Consumo Semanal</h2></div>
+    <div class="chart-card" style="margin-bottom:22px;"><h3>Últimas semanas</h3><div class="chart-wrap"><canvas id="chartConsumoSemanal"></canvas></div></div>
+    <div id="consumoSemanalTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- CONSUMO: MENSAL -->
+  <section class="view" id="view-consumo-mensal">
+    <div class="toolbar"><h2>Consumo Mensal</h2></div>
+    <div class="chart-card" style="margin-bottom:22px;"><h3>Últimos meses</h3><div class="chart-wrap"><canvas id="chartConsumoMensal"></canvas></div></div>
+    <div id="consumoMensalTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- CONSUMO: TENDÊNCIAS -->
+  <section class="view" id="view-consumo-tendencias">
+    <div class="toolbar"><h2>Tendências de Consumo</h2></div>
+    <div class="status-msg">Compara o consumo dos últimos 30 dias com os 30 dias anteriores, por material, com base nos lançamentos e importações já registrados.</div>
+    <br>
+    <div id="tendenciasTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- PLANEJAMENTO: COBERTURA -->
+  <section class="view" id="view-planejamento-cobertura">
+    <div class="toolbar"><h2>Cobertura de Estoque (dias)</h2></div>
+    <div class="status-msg">Cobertura = saldo atual ÷ consumo médio diário (últimos 30 dias). Calculada apenas quando já há histórico de consumo suficiente.</div>
+    <br>
+    <div id="coberturaTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- PLANEJAMENTO: PONTO DE PEDIDO -->
+  <section class="view" id="view-planejamento-ponto-pedido">
+    <div class="toolbar"><h2>Ponto de Pedido</h2></div>
+    <div class="status-msg">Ponto de pedido = (consumo médio diário × lead time) + estoque de segurança. Materiais em que o saldo já está no ponto de pedido ou abaixo dele precisam de reposição.</div>
+    <br>
+    <div id="pontoPedidoTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- PLANEJAMENTO: ESTOQUE DE SEGURANÇA -->
+  <section class="view" id="view-planejamento-seguranca">
+    <div class="toolbar"><h2>Estoque de Segurança</h2></div>
+    <div class="status-msg">Comparação entre o saldo atual e o estoque de segurança cadastrado para cada material + local.</div>
+    <br>
+    <div id="segurancaTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- PLANEJAMENTO: PREVISÃO DE RUPTURA -->
+  <section class="view" id="view-planejamento-ruptura">
+    <div class="toolbar"><h2>Previsão de Ruptura</h2></div>
+    <div class="status-msg">Estimativa simples de data de ruptura = hoje + cobertura em dias, para materiais com consumo médio conhecido e maior que zero. Não é uma previsão estatística — é uma projeção linear do consumo médio recente.</div>
+    <br>
+    <div id="previsaoRupturaTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- PLANEJAMENTO: SUGESTÃO DE COMPRA -->
+  <section class="view" id="view-planejamento-sugestao">
+    <div class="toolbar"><h2>Sugestão de Compra</h2></div>
+    <div class="status-msg">Lista materiais no ponto de pedido ou abaixo dele. A quantidade sugerida é uma referência simples (estoque máximo − saldo atual, quando o máximo estiver cadastrado). O módulo de Compras (pedido formal ao fornecedor) ainda não existe neste sistema — a ação abaixo só sinaliza a intenção, sem criar pedido.</div>
+    <br>
+    <div id="sugestaoCompraTable"><div class="empty">Carregando…</div></div>
+  </section>
+
+  <!-- FORNECEDORES (em breve) -->
+  <section class="view" id="view-fornecedores">
+    <div class="soon-panel">
+      <div class="soon-ic">✦</div>
+      <h2>Fornecedores</h2>
+      <p>O cadastro de fornecedores e o histórico de fornecimento por material ainda não foram construídos neste sistema.</p>
+      <span class="soon-tag">Em breve — Fase 2</span>
+    </div>
+  </section>
+
+  <!-- COMPRAS (em breve) -->
+  <section class="view" id="view-compras">
+    <div class="soon-panel">
+      <div class="soon-ic">⛁</div>
+      <h2>Compras</h2>
+      <p>Emissão e acompanhamento de pedidos de compra ainda não foram construídos neste sistema.</p>
+      <span class="soon-tag">Em breve — Fase 2</span>
+    </div>
+  </section>
+
   <!-- IMPORTAR EXCEL -->
   <section class="view" id="view-importar">
-    <div class="toolbar"><h2>Importar Consumo via Excel</h2></div>
+    <div class="toolbar"><h2>Importar Consumo via Excel (legado)</h2></div>
     <div class="status-msg">O arquivo deve ter colunas: DATA, LOCAL, CX P, CX M, CX G, CX GG (mesmo layout da planilha Google). Linhas com local não reconhecido são ignoradas e listadas abaixo. Nada é gravado até você confirmar a importação.</div>
     <br>
     <input type="file" id="fileExcel" accept=".xlsx,.xls">
@@ -439,8 +843,12 @@
     <div class="status-msg">Alertas de ruptura são gerados automaticamente quando o saldo fica abaixo do mínimo ou da segurança cadastrados. Alertas de possível perda são criados ao lançar uma movimentação do tipo "Perda".</div>
     <br>
     <div id="alertasTable"><div class="empty">Carregando…</div></div>
+  </section>
 
-    <div class="toolbar" style="margin-top:32px;"><h2>E-mails para notificação de risco de ruptura</h2></div>
+  <!-- CONFIGURAÇÕES -->
+  <section class="view" id="view-configuracoes">
+    <div class="toolbar"><h2>Configurações</h2></div>
+    <div class="toolbar" style="margin-top:8px;"><h2 style="font-size:15px;">E-mails para notificação de risco de ruptura</h2></div>
     <div class="status-msg">Todo dia, o sistema confere o estoque de cada caixa e envia um e-mail para os endereços abaixo sempre que o saldo estiver a 30% ou menos do estoque mínimo cadastrado (ou já abaixo dele). Cadastre aqui quem deve receber.</div>
     <br>
     <div style="display:flex; gap:8px; max-width:420px; margin-bottom:16px;">
@@ -527,6 +935,7 @@
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 const SUPABASE_URL = 'https://lqmsgggabzkhhlpqaupq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BFbQ9ebONlSEPYdTPXOilQ_3XOXs23A';
@@ -588,6 +997,10 @@ function fmtNum(n) {
   if (n === null || n === undefined) return '—';
   return Number(n).toLocaleString('pt-BR');
 }
+function fmtDec(n, casas = 1) {
+  if (n === null || n === undefined) return '—';
+  return Number(n).toLocaleString('pt-BR', { maximumFractionDigits: casas });
+}
 
 function daysCoverage(saldo, avgDaily) {
   if (!avgDaily || avgDaily <= 0) return null;
@@ -604,26 +1017,88 @@ function statusOf(saldo, minimo, seguranca) {
   return { key: 'good', label: 'OK' };
 }
 
-// ---------- Navigation ----------
-document.querySelectorAll('nav .tab').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('nav .tab').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-    document.getElementById('view-' + btn.dataset.view).classList.add('active');
-    loadView(btn.dataset.view);
+// ---------- Navegação (menu agrupado / accordion) ----------
+let _dashboardUnit = 'TODAS';
+let _dateRange = { from: null, to: null };
+let _searchTerm = '';
+
+function activateView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+
+  document.querySelectorAll('nav button.tab, .nav-sub button').forEach(b => b.classList.remove('active'));
+  const btn = document.querySelector(`[data-view="${view}"]`);
+  if (btn) btn.classList.add('active');
+
+  document.querySelectorAll('.nav-group').forEach(g => {
+    const has = g.querySelector(`[data-view="${view}"]`);
+    g.classList.toggle('has-active', !!has);
+    if (has) g.classList.add('open');
   });
+
+  loadView(view);
+}
+
+document.querySelectorAll('nav button.tab, .nav-sub button').forEach(btn => {
+  btn.addEventListener('click', () => activateView(btn.dataset.view));
+});
+document.querySelectorAll('.nav-group-head').forEach(head => {
+  head.addEventListener('click', () => head.closest('.nav-group').classList.toggle('open'));
 });
 
 function openModal(id) { document.getElementById(id).classList.add('active'); }
 function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function irParaAlertas() { activateView('alertas'); }
+
+// Período padrão: últimos 30 dias
+(function initDateRange() {
+  const hoje = new Date();
+  const antes = new Date(); antes.setDate(hoje.getDate() - 30);
+  _dateRange.to = hoje.toISOString().slice(0, 10);
+  _dateRange.from = antes.toISOString().slice(0, 10);
+  document.getElementById('dateFrom').value = _dateRange.from;
+  document.getElementById('dateTo').value = _dateRange.to;
+})();
+document.getElementById('dateFrom').addEventListener('change', (e) => { _dateRange.from = e.target.value; refreshConsumoViews(); });
+document.getElementById('dateTo').addEventListener('change', (e) => { _dateRange.to = e.target.value; refreshConsumoViews(); });
+
+document.getElementById('globalSearch').addEventListener('input', (e) => {
+  _searchTerm = e.target.value.trim().toLowerCase();
+  filterVisibleTables();
+});
+function filterVisibleTables() {
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  activeView.querySelectorAll('table tbody tr').forEach(tr => {
+    tr.style.display = !_searchTerm || tr.textContent.toLowerCase().includes(_searchTerm) ? '' : 'none';
+  });
+}
+
+function refreshConsumoViews() {
+  const activeView = document.querySelector('.view.active');
+  if (!activeView) return;
+  loadView(activeView.id.replace('view-', ''));
+}
 
 async function loadView(view) {
   if (view === 'dashboard') return loadDashboard();
   if (view === 'caixas') return loadCaixas();
+  if (view === 'materiais-categorias') return loadMateriaisCategorias();
   if (view === 'estoque') return loadEstoque();
   if (view === 'movimentacoes') return loadMovimentacoes();
-  if (view === 'alertas') { verificarAlertas(); loadEmailsDestinatarios(); }
+  if (view === 'consumo-diario') return loadConsumoPeriodo('dia', 'chartConsumoDiarioDetalhe', 'consumoDiarioTable');
+  if (view === 'consumo-semanal') return loadConsumoPeriodo('semana', 'chartConsumoSemanal', 'consumoSemanalTable');
+  if (view === 'consumo-mensal') return loadConsumoPeriodo('mes', 'chartConsumoMensal', 'consumoMensalTable');
+  if (view === 'consumo-tendencias') return loadTendenciasConsumo();
+  if (view === 'planejamento-cobertura') return loadPlanejamentoLista('cobertura');
+  if (view === 'planejamento-ponto-pedido') return loadPlanejamentoLista('ponto_pedido');
+  if (view === 'planejamento-seguranca') return loadPlanejamentoLista('seguranca');
+  if (view === 'planejamento-ruptura') return loadPlanejamentoLista('ruptura');
+  if (view === 'planejamento-sugestao') return loadPlanejamentoLista('sugestao');
+  if (view === 'alertas') { verificarAlertas(); }
+  if (view === 'configuracoes') { loadEmailsDestinatarios(); }
+  filterVisibleTables();
 }
 
 // ---------- Dashboard ----------
@@ -662,6 +1137,9 @@ function classificaRisco(e) {
   return { key: 'good', label: 'Normal' };
 }
 
+let _chartConsumoLinha, _chartConsumoDonut, _chartEstoqueBarra;
+function destroyChart(ref) { if (ref) { try { ref.destroy(); } catch (e) {} } }
+
 async function loadDashboard() {
   try {
     const [caixas, status] = await Promise.all([
@@ -671,37 +1149,70 @@ async function loadDashboard() {
 
     // estoque_planejamento já resolve o mínimo/segurança por SKU+Local e complementa com
     // consumo médio, cobertura em dias e ponto de pedido (quando já há histórico suficiente).
-    const rows = status.map(e => {
+    let rows = status.map(e => {
       const s = classificaRisco(e);
       return { ...e, minimo: e.estoque_minimo, seguranca: e.estoque_seguranca, status: s };
     });
 
+    // ---- Abas por unidade ----
+    const unidades = ['TODAS', ...Object.keys(LOCAIS)];
+    document.getElementById('dashboardUnitTabs').innerHTML = unidades.map(u =>
+      `<button data-unit="${u}" class="${u === _dashboardUnit ? 'active' : ''}">${u === 'TODAS' ? 'Visão Nacional' : (LOCAIS[u] || u)}</button>`
+    ).join('');
+    document.querySelectorAll('#dashboardUnitTabs button').forEach(b => {
+      b.addEventListener('click', () => { _dashboardUnit = b.dataset.unit; loadDashboard(); });
+    });
+
+    const rowsFiltradas = _dashboardUnit === 'TODAS' ? rows : rows.filter(r => r.local_id === _dashboardUnit);
+
     const totalSkus = new Set(caixas.map(c => c.sku)).size;
-    const criticos = rows.filter(r => r.status.key === 'critical').length;
-    const semParam = rows.filter(r => r.status.key === 'neutral').length;
-    const totalSaldo = rows.reduce((s, r) => s + (Number(r.saldo) || 0), 0);
+    const criticos = rowsFiltradas.filter(r => r.status.key === 'critical').length;
+    const semParam = rowsFiltradas.filter(r => r.status.key === 'neutral').length;
+    const totalSaldo = rowsFiltradas.reduce((s, r) => s + (Number(r.saldo) || 0), 0);
+    const totalPonto = rowsFiltradas.filter(r => r.status.key === 'serious' || r.status.key === 'critical').length;
 
     document.getElementById('kpiCards').innerHTML = `
       <div class="card"><div class="icon-badge">▢</div><div class="label">SKUs cadastrados</div><div class="value">${totalSkus}</div></div>
       <div class="card"><div class="icon-badge" style="background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical)">▲</div><div class="label">Combinações críticas</div><div class="value" style="color:var(--critical)">${criticos}</div></div>
+      <div class="card"><div class="icon-badge" style="background:color-mix(in srgb, var(--serious) 16%, transparent); color:var(--serious)">⇩</div><div class="label">Precisam de reposição</div><div class="value" style="color:var(--serious)">${totalPonto}</div></div>
       <div class="card"><div class="icon-badge" style="background:var(--surface-2); color:var(--muted)">⚙</div><div class="label">Sem parâmetro definido</div><div class="value" style="color:var(--muted)">${semParam}</div></div>
       <div class="card"><div class="icon-badge">▥</div><div class="label">Saldo total (unid.)</div><div class="value">${fmtNum(totalSaldo)}</div></div>
     `;
 
-    // ---- Saúde global (pior status entre todas as combinações SKU+Local) ----
-    const globalKey = rows.length
-      ? rows.reduce((worst, r) => SEVERITY[r.status.key] > SEVERITY[worst] ? r.status.key : worst, 'good')
+    // ---- Saúde global (pior status entre as combinações filtradas) ----
+    const globalKey = rowsFiltradas.length
+      ? rowsFiltradas.reduce((worst, r) => SEVERITY[r.status.key] > SEVERITY[worst] ? r.status.key : worst, 'good')
       : 'neutral';
-    document.getElementById('globalHealth').innerHTML = rows.length
-      ? `<span class="global-health ${globalKey}">Saúde global: ${GLOBAL_HEALTH_LABEL[globalKey]}</span>`
+    document.getElementById('globalHealth').innerHTML = rowsFiltradas.length
+      ? `<span class="global-health ${globalKey}">Saúde ${_dashboardUnit === 'TODAS' ? 'global' : 'da unidade'}: ${GLOBAL_HEALTH_LABEL[globalKey]}</span>`
       : '';
 
+    // ---- Painel de risco por unidade (substitui o mapa do Brasil por algo honesto) ----
+    const riskByUnit = Object.keys(LOCAIS).map(localId => {
+      const rowsUnidade = rows.filter(r => r.local_id === localId);
+      const worst = rowsUnidade.reduce((w, r) => SEVERITY[r.status.key] > SEVERITY[w] ? r.status.key : w, 'good');
+      return { localId, nome: LOCAIS[localId], n: rowsUnidade.length, worst };
+    });
+    const dotColor = { critical: 'var(--critical)', serious: 'var(--serious)', warning: 'var(--warning)', good: 'var(--good)', neutral: 'var(--muted)' };
+    document.getElementById('riskMapGrid').innerHTML = riskByUnit.map(u => `
+      <div class="risk-map-row">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="risk-map-dot" style="background:${dotColor[u.worst]}"></span>
+          <span class="rm-name">${u.nome}</span>
+        </div>
+        <span class="rm-count">${u.n ? `${u.n} SKU${u.n > 1 ? 's' : ''} · ${GLOBAL_HEALTH_LABEL[u.worst].split(' — ')[0].split(' ')[0]}` : 'sem materiais'}</span>
+      </div>
+    `).join('');
+
+    // ---- Charts ----
+    await renderChartsDashboard(rowsFiltradas);
+
     // ---- Saúde por unidade ----
-    const locaisOrdenados = Object.keys(LOCAIS);
-    const extras = [...new Set(rows.map(r => r.local_id).filter(l => !locaisOrdenados.includes(l)))];
+    const locaisOrdenados = _dashboardUnit === 'TODAS' ? Object.keys(LOCAIS) : [_dashboardUnit];
+    const extras = [...new Set(rowsFiltradas.map(r => r.local_id).filter(l => !locaisOrdenados.includes(l)))];
     const unidadesPanelsHtml = [...locaisOrdenados, ...extras].map(localId => {
       const nome = LOCAIS[localId] || localId || 'Sem local definido';
-      const rowsUnidade = rows.filter(r => r.local_id === localId).sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
+      const rowsUnidade = rowsFiltradas.filter(r => r.local_id === localId).sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
 
       if (rowsUnidade.length === 0) {
         return `
@@ -732,7 +1243,7 @@ async function loadDashboard() {
 
       const linhasDetalhe = emAtencao.map(r => `
         <div class="sku-row">
-          <span class="sku-name">${r.sku || '—'} <span class="sku-desc">${r.descricao || ''}${r.cobertura_dias !== null && r.cobertura_dias !== undefined ? ` · cobertura ${Number(r.cobertura_dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d` : ''}</span></span>
+          <span class="sku-name">${r.sku || '—'} <span class="sku-desc">${r.descricao || ''}${r.cobertura_dias !== null && r.cobertura_dias !== undefined ? ` · cobertura ${fmtDec(r.cobertura_dias)}d` : ''}</span></span>
           <span class="sku-right">
             <span class="sku-saldo">${fmtNum(r.saldo)}</span>
             <span class="badge ${r.status.key}">${r.status.label}</span>
@@ -756,17 +1267,48 @@ async function loadDashboard() {
     }).join('');
     document.getElementById('unidadePanels').innerHTML = unidadesPanelsHtml;
 
-    if (rows.length === 0) {
+    // ---- Materiais com maior risco de ruptura ----
+    const maiorRisco = rowsFiltradas.filter(r => ['critical', 'serious'].includes(r.status.key))
+      .sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]).slice(0, 15);
+    document.getElementById('tabelaMaiorRisco').innerHTML = maiorRisco.length ? `
+      <table><thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Cobertura (dias)</th><th>Status</th></tr></thead>
+      <tbody>${maiorRisco.map(r => `<tr>
+        <td>${r.sku || '—'}</td><td>${r.descricao || '—'}</td><td>${LOCAIS[r.local_id] || r.local_id}</td>
+        <td>${fmtNum(r.saldo)}</td><td>${fmtDec(r.cobertura_dias)}</td>
+        <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
+      </tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Nenhum material em risco de ruptura no momento.</div>';
+
+    // ---- Top materiais consumidos (30 dias) ----
+    await carregarTopConsumo();
+
+    // ---- Sugestão de reposição ----
+    const sugestoes = rowsFiltradas.filter(r => r.ponto_pedido !== null && r.ponto_pedido !== undefined && Number(r.saldo) <= r.ponto_pedido)
+      .sort((a, b) => (Number(a.saldo) - (a.ponto_pedido || 0)) - (Number(b.saldo) - (b.ponto_pedido || 0)));
+    document.getElementById('tabelaSugestaoReposicao').innerHTML = sugestoes.length ? `
+      <table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Ponto de pedido</th><th>Sugestão de compra</th><th></th></tr></thead>
+      <tbody>${sugestoes.slice(0, 15).map(r => {
+        const sugestao = r.estoque_maximo !== null && r.estoque_maximo !== undefined ? Math.max(0, r.estoque_maximo - Number(r.saldo)) : null;
+        return `<tr>
+        <td>${r.sku || '—'}</td><td>${LOCAIS[r.local_id] || r.local_id}</td>
+        <td>${fmtNum(r.saldo)}</td><td>${fmtNum(r.ponto_pedido)}</td>
+        <td>${sugestao !== null ? fmtNum(sugestao) : 'defina o estoque máximo para calcular'}</td>
+        <td><button class="secondary" disabled title="Módulo de Compras ainda não construído">Comprar</button></td>
+      </tr>`;}).join('')}</tbody></table>`
+      : '<div class="empty">Nenhum material precisa de reposição no momento.</div>';
+
+    if (rowsFiltradas.length === 0) {
       document.getElementById('semaforoTable').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda. Assim que a planilha de consumo sincronizar (ou uma movimentação for lançada), o estoque aparece aqui.</div>';
+      document.getElementById('lastSync').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
       return;
     }
 
-    rows.sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
+    rowsFiltradas.sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
     document.getElementById('semaforoTable').innerHTML = `
       <table>
         <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Mínimo</th><th>Segurança</th><th>Consumo médio/dia</th><th>Cobertura (dias)</th><th>Ponto de pedido</th><th>Status</th></tr></thead>
         <tbody>
-          ${rows.map(r => `
+          ${rowsFiltradas.map(r => `
             <tr>
               <td>${r.sku || '—'}</td>
               <td>${r.descricao || '—'}</td>
@@ -774,8 +1316,8 @@ async function loadDashboard() {
               <td>${fmtNum(r.saldo)}</td>
               <td>${fmtNum(r.minimo)}</td>
               <td>${fmtNum(r.seguranca)}</td>
-              <td>${r.consumo_medio_diario !== null && r.consumo_medio_diario !== undefined ? Number(r.consumo_medio_diario).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}</td>
-              <td>${r.cobertura_dias !== null && r.cobertura_dias !== undefined ? Number(r.cobertura_dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}</td>
+              <td>${fmtDec(r.consumo_medio_diario)}</td>
+              <td>${fmtDec(r.cobertura_dias)}</td>
               <td>${fmtNum(r.ponto_pedido)}</td>
               <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
             </tr>
@@ -784,6 +1326,7 @@ async function loadDashboard() {
       </table>
     `;
     document.getElementById('lastSync').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+    filterVisibleTables();
   } catch (e) {
     document.getElementById('globalHealth').innerHTML = '';
     document.getElementById('unidadePanels').innerHTML = '';
@@ -791,7 +1334,103 @@ async function loadDashboard() {
   }
 }
 
-// ---------- Cadastro de Caixas ----------
+async function renderChartsDashboard(rowsFiltradas) {
+  if (typeof Chart === 'undefined') return;
+  const wrapLinha = document.getElementById('chartConsumoLinha');
+  const wrapDonut = document.getElementById('chartConsumoDonut');
+  const wrapBarra = document.getElementById('chartEstoqueBarra');
+
+  // Consumo últimos 30 dias, agregado por dia (a partir de consumo_diario — dado real já existente)
+  try {
+    const consumo = await sb(`consumo_diario?select=data,quantidade&data=gte.${diasAtras(30)}&order=data.asc`);
+    destroyChart(_chartConsumoLinha);
+    if (!consumo.length) {
+      wrapLinha.parentElement.querySelector('.chart-wrap').style.display = 'none';
+      if (!wrapLinha.parentElement.querySelector('.chart-empty')) wrapLinha.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo registrado nos últimos 30 dias ainda.</div>');
+    } else {
+      const porDia = {};
+      consumo.forEach(c => { porDia[c.data] = (porDia[c.data] || 0) + Number(c.quantidade || 0); });
+      const labels = Object.keys(porDia).sort();
+      wrapLinha.parentElement.querySelector('.chart-wrap').style.display = '';
+      const oldEmpty = wrapLinha.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+      _chartConsumoLinha = new Chart(wrapLinha, {
+        type: 'line',
+        data: { labels: labels.map(d => d.slice(5)), datasets: [{ label: 'Consumo', data: labels.map(d => porDia[d]), borderColor: '#c69a4b', backgroundColor: 'rgba(198,154,75,.15)', fill: true, tension: .25 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+  } catch (e) { /* silencioso: gráfico é complemento, não bloqueia o dashboard */ }
+
+  // Consumo por categoria (30 dias) — junta consumo_diario com o cadastro de materiais para saber a categoria
+  try {
+    const [consumo, caixas] = await Promise.all([
+      sb(`consumo_diario?select=caixa_id,quantidade&data=gte.${diasAtras(30)}`),
+      sb('caixas_atual?select=id,categoria')
+    ]);
+    destroyChart(_chartConsumoDonut);
+    const catById = Object.fromEntries(caixas.map(c => [c.id, c.categoria || 'CAIXAS']));
+    const porCategoria = {};
+    consumo.forEach(c => { const cat = catById[c.caixa_id] || 'CAIXAS'; porCategoria[cat] = (porCategoria[cat] || 0) + Number(c.quantidade || 0); });
+    const cats = Object.keys(porCategoria);
+    if (!cats.length) {
+      wrapDonut.parentElement.querySelector('.chart-wrap').style.display = 'none';
+      if (!wrapDonut.parentElement.querySelector('.chart-empty')) wrapDonut.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem consumo por categoria ainda.</div>');
+    } else {
+      wrapDonut.parentElement.querySelector('.chart-wrap').style.display = '';
+      const oldEmpty = wrapDonut.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+      _chartConsumoDonut = new Chart(wrapDonut, {
+        type: 'doughnut',
+        data: { labels: cats, datasets: [{ data: cats.map(c => porCategoria[c]), backgroundColor: ['#c69a4b', '#2a78d6', '#0ca30c', '#ec835a', '#d03b3b', '#8b8983'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
+      });
+    }
+  } catch (e) { /* silencioso */ }
+
+  // Estoque por unidade (saldo atual somado)
+  destroyChart(_chartEstoqueBarra);
+  const porUnidade = {};
+  Object.keys(LOCAIS).forEach(l => porUnidade[l] = 0);
+  rowsFiltradas.forEach(r => { if (r.local_id) porUnidade[r.local_id] = (porUnidade[r.local_id] || 0) + (Number(r.saldo) || 0); });
+  const unidadesComDado = Object.keys(porUnidade).filter(u => porUnidade[u] !== 0);
+  if (!unidadesComDado.length) {
+    wrapBarra.parentElement.querySelector('.chart-wrap').style.display = 'none';
+    if (!wrapBarra.parentElement.querySelector('.chart-empty')) wrapBarra.parentElement.insertAdjacentHTML('beforeend', '<div class="chart-empty">Sem saldo de estoque ainda.</div>');
+  } else {
+    wrapBarra.parentElement.querySelector('.chart-wrap').style.display = '';
+    const oldEmpty = wrapBarra.parentElement.querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
+    _chartEstoqueBarra = new Chart(wrapBarra, {
+      type: 'bar',
+      data: { labels: Object.keys(porUnidade).map(l => LOCAIS[l]), datasets: [{ label: 'Saldo', data: Object.values(porUnidade), backgroundColor: '#2a78d6' }] },
+      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+    });
+  }
+}
+
+function diasAtras(n) {
+  const d = new Date(); d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+}
+
+async function carregarTopConsumo() {
+  try {
+    const [consumo, caixas] = await Promise.all([
+      sb(`consumo_diario?select=caixa_id,quantidade&data=gte.${diasAtras(30)}`),
+      sb('caixas_atual?select=id,sku,descricao')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const porCaixa = {};
+    consumo.forEach(c => { porCaixa[c.caixa_id] = (porCaixa[c.caixa_id] || 0) + Number(c.quantidade || 0); });
+    const top = Object.entries(porCaixa).map(([id, total]) => ({ ...caixaById[id], total })).filter(r => r.sku).sort((a, b) => b.total - a.total).slice(0, 10);
+    document.getElementById('tabelaTopConsumo').innerHTML = top.length ? `
+      <table><thead><tr><th>SKU</th><th>Descrição</th><th>Consumo (30 dias)</th></tr></thead>
+      <tbody>${top.map(r => `<tr><td>${r.sku}</td><td>${r.descricao || '—'}</td><td>${fmtNum(r.total)}</td></tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Nenhum consumo registrado nos últimos 30 dias ainda.</div>';
+  } catch (e) {
+    document.getElementById('tabelaTopConsumo').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+// ---------- Cadastro de Materiais ----------
 let _caixasCache = [];
 async function loadCaixas() {
   try {
@@ -881,6 +1520,32 @@ document.getElementById('btnSalvarCaixa').addEventListener('click', async () => 
     msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
   }
 });
+
+// ---------- Materiais > Categorias ----------
+async function loadMateriaisCategorias() {
+  try {
+    const [caixas, estoque] = await Promise.all([
+      sb('caixas_atual?select=id,sku,categoria,subcategoria'),
+      sb('estoque_atual?select=caixa_id,saldo')
+    ]);
+    const saldoByCaixa = {};
+    estoque.forEach(e => { saldoByCaixa[e.caixa_id] = (saldoByCaixa[e.caixa_id] || 0) + (Number(e.saldo) || 0); });
+    const porCategoria = {};
+    caixas.forEach(c => {
+      const cat = c.categoria || 'CAIXAS';
+      if (!porCategoria[cat]) porCategoria[cat] = { categoria: cat, skus: new Set(), saldo: 0 };
+      porCategoria[cat].skus.add(c.sku);
+      porCategoria[cat].saldo += saldoByCaixa[c.id] || 0;
+    });
+    const linhas = Object.values(porCategoria);
+    document.getElementById('categoriasTable').innerHTML = linhas.length ? `
+      <table><thead><tr><th>Categoria</th><th>SKUs distintos</th><th>Saldo total</th></tr></thead>
+      <tbody>${linhas.map(c => `<tr><td>${c.categoria}</td><td>${c.skus.size}</td><td>${fmtNum(c.saldo)}</td></tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Nenhum material cadastrado ainda.</div>';
+  } catch (e) {
+    document.getElementById('categoriasTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
 
 // ---------- Estoque Atual ----------
 async function loadEstoque() {
@@ -1011,6 +1676,129 @@ document.getElementById('btnSalvarMov').addEventListener('click', async () => {
     msg.textContent = 'Erro: ' + e.message; msg.className = 'status-msg error';
   }
 });
+
+// ---------- Consumo por período (Diário/Semanal/Mensal), a partir de consumo_diario real ----------
+let _chartConsumoPeriodo;
+async function loadConsumoPeriodo(granularidade, chartId, tableId) {
+  const el = document.getElementById(tableId);
+  el.innerHTML = '<div class="empty">Carregando…</div>';
+  try {
+    const dias = granularidade === 'dia' ? 30 : granularidade === 'semana' ? 90 : 365;
+    const consumo = await sb(`consumo_diario?select=data,quantidade&data=gte.${diasAtras(dias)}&order=data.asc`);
+    if (!consumo.length) {
+      el.innerHTML = '<div class="empty">Nenhum consumo registrado neste período ainda.</div>';
+      destroyChart(_chartConsumoPeriodo);
+      return;
+    }
+    const grupos = {};
+    consumo.forEach(c => {
+      let chave;
+      if (granularidade === 'dia') chave = c.data;
+      else if (granularidade === 'semana') {
+        const d = new Date(c.data + 'T00:00:00');
+        const primeiraDoAno = new Date(d.getFullYear(), 0, 1);
+        const semana = Math.ceil((((d - primeiraDoAno) / 86400000) + primeiraDoAno.getDay() + 1) / 7);
+        chave = `${d.getFullYear()}-S${String(semana).padStart(2, '0')}`;
+      } else {
+        chave = c.data.slice(0, 7);
+      }
+      grupos[chave] = (grupos[chave] || 0) + Number(c.quantidade || 0);
+    });
+    const labels = Object.keys(grupos).sort();
+    const canvas = document.getElementById(chartId);
+    if (canvas && typeof Chart !== 'undefined') {
+      destroyChart(_chartConsumoPeriodo);
+      _chartConsumoPeriodo = new Chart(canvas, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Consumo', data: labels.map(l => grupos[l]), backgroundColor: '#2a78d6' }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+    el.innerHTML = `<table><thead><tr><th>Período</th><th>Consumo total</th></tr></thead>
+      <tbody>${labels.slice().reverse().map(l => `<tr><td>${l}</td><td>${fmtNum(grupos[l])}</td></tr>`).join('')}</tbody></table>`;
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+// ---------- Consumo > Tendências ----------
+async function loadTendenciasConsumo() {
+  const el = document.getElementById('tendenciasTable');
+  el.innerHTML = '<div class="empty">Carregando…</div>';
+  try {
+    const [consumoRecente, consumoAnterior, caixas] = await Promise.all([
+      sb(`consumo_diario?select=caixa_id,quantidade&data=gte.${diasAtras(30)}`),
+      sb(`consumo_diario?select=caixa_id,quantidade&data=gte.${diasAtras(60)}&data=lt.${diasAtras(30)}`),
+      sb('caixas_atual?select=id,sku,descricao')
+    ]);
+    const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
+    const somaPor = (arr) => { const m = {}; arr.forEach(c => { m[c.caixa_id] = (m[c.caixa_id] || 0) + Number(c.quantidade || 0); }); return m; };
+    const recente = somaPor(consumoRecente);
+    const anterior = somaPor(consumoAnterior);
+    const ids = new Set([...Object.keys(recente), ...Object.keys(anterior)]);
+    const linhas = Array.from(ids).map(id => {
+      const c = caixaById[id] || {};
+      const r = recente[id] || 0, a = anterior[id] || 0;
+      const variacao = a > 0 ? ((r - a) / a) * 100 : (r > 0 ? null : 0);
+      return { sku: c.sku, descricao: c.descricao, recente: r, anterior: a, variacao };
+    }).filter(l => l.sku).sort((x, y) => y.recente - x.recente);
+    el.innerHTML = linhas.length ? `
+      <table><thead><tr><th>SKU</th><th>Descrição</th><th>Consumo (30d recentes)</th><th>Consumo (30d anteriores)</th><th>Variação</th></tr></thead>
+      <tbody>${linhas.map(l => `<tr>
+        <td>${l.sku}</td><td>${l.descricao || '—'}</td><td>${fmtNum(l.recente)}</td><td>${fmtNum(l.anterior)}</td>
+        <td>${l.variacao === null ? 'novo consumo' : `<span class="badge ${l.variacao > 0 ? 'warning' : l.variacao < 0 ? 'good' : 'neutral'}">${l.variacao > 0 ? '+' : ''}${fmtDec(l.variacao)}%</span>`}</td>
+      </tr>`).join('')}</tbody></table>`
+      : '<div class="empty">Ainda não há histórico suficiente (60 dias) para calcular tendências.</div>';
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
+
+// ---------- Planejamento (Cobertura / Ponto de Pedido / Segurança / Ruptura / Sugestão) ----------
+async function loadPlanejamentoLista(tipo) {
+  const idPorTipo = {
+    cobertura: 'coberturaTable',
+    ponto_pedido: 'pontoPedidoTable',
+    seguranca: 'segurancaTable',
+    ruptura: 'previsaoRupturaTable',
+    sugestao: 'sugestaoCompraTable'
+  };
+  const el = document.getElementById(idPorTipo[tipo]);
+  el.innerHTML = '<div class="empty">Carregando…</div>';
+  try {
+    const rows = await sb('estoque_planejamento?select=*');
+    if (!rows.length) { el.innerHTML = '<div class="empty">Nenhum dado de planejamento disponível ainda.</div>'; return; }
+
+    if (tipo === 'cobertura') {
+      const comDado = rows.filter(r => r.cobertura_dias !== null && r.cobertura_dias !== undefined).sort((a, b) => a.cobertura_dias - b.cobertura_dias);
+      el.innerHTML = comDado.length ? `<table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Consumo médio/dia</th><th>Cobertura (dias)</th></tr></thead>
+        <tbody>${comDado.map(r => `<tr><td>${r.sku}</td><td>${LOCAIS[r.local_id] || r.local_id}</td><td>${fmtNum(r.saldo)}</td><td>${fmtDec(r.consumo_medio_diario)}</td><td>${fmtDec(r.cobertura_dias)}</td></tr>`).join('')}</tbody></table>`
+        : '<div class="empty">Ainda não há consumo médio suficiente (30 dias) para calcular cobertura.</div>';
+    } else if (tipo === 'ponto_pedido') {
+      const comDado = rows.filter(r => r.ponto_pedido !== null && r.ponto_pedido !== undefined).sort((a, b) => (Number(a.saldo) - a.ponto_pedido) - (Number(b.saldo) - b.ponto_pedido));
+      el.innerHTML = comDado.length ? `<table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Ponto de pedido</th><th>Situação</th></tr></thead>
+        <tbody>${comDado.map(r => { const abaixo = Number(r.saldo) <= r.ponto_pedido; return `<tr><td>${r.sku}</td><td>${LOCAIS[r.local_id] || r.local_id}</td><td>${fmtNum(r.saldo)}</td><td>${fmtNum(r.ponto_pedido)}</td><td><span class="badge ${abaixo ? 'serious' : 'good'}">${abaixo ? 'Repor' : 'OK'}</span></td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="empty">Ainda não há dados suficientes para calcular o ponto de pedido (depende de lead time e consumo médio).</div>';
+    } else if (tipo === 'seguranca') {
+      const comDado = rows.filter(r => r.estoque_seguranca !== null && r.estoque_seguranca !== undefined).sort((a, b) => Number(a.saldo) - Number(b.saldo));
+      el.innerHTML = comDado.length ? `<table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Estoque de segurança</th><th>Situação</th></tr></thead>
+        <tbody>${comDado.map(r => { const abaixo = Number(r.saldo) <= r.estoque_seguranca; return `<tr><td>${r.sku}</td><td>${LOCAIS[r.local_id] || r.local_id}</td><td>${fmtNum(r.saldo)}</td><td>${fmtNum(r.estoque_seguranca)}</td><td><span class="badge ${abaixo ? 'critical' : 'good'}">${abaixo ? 'Abaixo' : 'OK'}</span></td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="empty">Nenhum material com estoque de segurança cadastrado ainda.</div>';
+    } else if (tipo === 'ruptura') {
+      const comDado = rows.filter(r => r.cobertura_dias !== null && r.cobertura_dias !== undefined && r.consumo_medio_diario > 0).sort((a, b) => a.cobertura_dias - b.cobertura_dias);
+      el.innerHTML = comDado.length ? `<table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Cobertura (dias)</th><th>Previsão de ruptura</th></tr></thead>
+        <tbody>${comDado.map(r => { const dataRuptura = new Date(); dataRuptura.setDate(dataRuptura.getDate() + Math.floor(r.cobertura_dias)); return `<tr><td>${r.sku}</td><td>${LOCAIS[r.local_id] || r.local_id}</td><td>${fmtNum(r.saldo)}</td><td>${fmtDec(r.cobertura_dias)}</td><td>${dataRuptura.toLocaleDateString('pt-BR')}</td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="empty">Ainda não há consumo médio suficiente para estimar previsão de ruptura.</div>';
+    } else if (tipo === 'sugestao') {
+      const comDado = rows.filter(r => r.ponto_pedido !== null && r.ponto_pedido !== undefined && Number(r.saldo) <= r.ponto_pedido);
+      el.innerHTML = comDado.length ? `<table><thead><tr><th>SKU</th><th>Local</th><th>Saldo</th><th>Ponto de pedido</th><th>Sugestão de compra</th><th></th></tr></thead>
+        <tbody>${comDado.map(r => { const sugestao = r.estoque_maximo !== null && r.estoque_maximo !== undefined ? Math.max(0, r.estoque_maximo - Number(r.saldo)) : null; return `<tr><td>${r.sku}</td><td>${LOCAIS[r.local_id] || r.local_id}</td><td>${fmtNum(r.saldo)}</td><td>${fmtNum(r.ponto_pedido)}</td><td>${sugestao !== null ? fmtNum(sugestao) : 'defina o estoque máximo para calcular'}</td><td><button class="secondary" disabled title="Módulo de Compras ainda não construído">Comprar</button></td></tr>`; }).join('')}</tbody></table>`
+        : '<div class="empty">Nenhum material precisa de reposição no momento.</div>';
+    }
+  } catch (e) {
+    el.innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
+  }
+}
 
 // ---------- Importar Excel ----------
 let _importParsed = [];
@@ -1311,6 +2099,8 @@ document.getElementById('btnExportConsumo').addEventListener('click', async () =
 async function loadAlertas() {
   try {
     const alertas = await sb('alertas?select=*&status=eq.aberto&order=criado_em.desc');
+    document.getElementById('bellCount').style.display = alertas.length ? 'flex' : 'none';
+    document.getElementById('bellCount').textContent = alertas.length;
     if (alertas.length === 0) {
       document.getElementById('alertasTable').innerHTML = '<div class="empty">Nenhum alerta aberto no momento.</div>';
       return;
@@ -1379,7 +2169,7 @@ async function verificarAlertas() {
 
 document.getElementById('btnVerificarAlertas').addEventListener('click', verificarAlertas);
 
-// ---------- E-mails para notificação diária ----------
+// ---------- E-mails para notificação diária (agora em Configurações) ----------
 async function loadEmailsDestinatarios() {
   try {
     const emails = await sb('alerta_emails?select=*&ativo=eq.true&order=created_at.asc');
@@ -1431,7 +2221,10 @@ async function removerEmail(id) {
 }
 
 // init
+document.getElementById('view-dashboard').classList.add('active');
+document.querySelector('[data-view="dashboard"]').classList.add('active');
 loadDashboard();
+loadAlertas();
 </script>
 
 </body>
