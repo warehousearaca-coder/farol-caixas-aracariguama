@@ -6,46 +6,36 @@
 <title>InsumosLog — CD Araçariguama</title>
 <style>
   :root {
-    color-scheme: light;
-    --surface: #ffffff;
-    --surface-2: #f4f3f0;
-    --page: #f6f5f2;
-    --ink: #1c1c1c;
-    --ink-2: #52514e;
-    --muted: #8b8983;
-    --border: #e7e5df;
-    --accent: #2a78d6;
-    --good: #0ca30c;
-    --warning: #b8790a;
-    --serious: #ec835a;
-    --critical: #d03b3b;
-    --sidebar-bg: #12100e;
-    --sidebar-bg-2: #1b1815;
-    --sidebar-ink: #e7e2d8;
-    --sidebar-muted: #948d80;
-    --gold: #c69a4b;
-    --gold-ink: #7a5c1e;
+    color-scheme: dark;
+    --page: #0e1016;
+    --surface: #171a24;
+    --surface-2: #12141c;
+    --surface-3: #1f2330;
+    --ink: #f2f3f7;
+    --ink-2: #c7cad6;
+    --muted: #868ca0;
+    --border: rgba(255,255,255,.08);
+    --accent: #3b82f6;
+    --accent-ink: #93c5fd;
+    --good: #22c55e;
+    --warning: #eab308;
+    --serious: #f97316;
+    --critical: #ef4444;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --purple: #a855f7;
+    --orange: #f97316;
+    --red: #ef4444;
+    --yellow: #eab308;
+    --indigo: #6366f1;
+    --teal: #14b8a6;
+    --sidebar-bg: #0b0d13;
+    --sidebar-bg-2: #12141c;
+    --sidebar-ink: #e7e9f0;
+    --sidebar-muted: #7b8095;
+    --gold: #3b82f6;
+    --gold-ink: #93c5fd;
     --sidebar-w: 246px;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --surface: #1a1a19;
-      --surface-2: #232322;
-      --page: #0d0d0d;
-      --ink: #ffffff;
-      --ink-2: #c3c2b7;
-      --muted: #898781;
-      --border: #2c2c2a;
-      --accent: #3987e5;
-      --good: #0ca30c;
-      --warning: #fab219;
-      --serious: #ec835a;
-      --critical: #d03b3b;
-      --sidebar-bg: #0b0a09;
-      --sidebar-bg-2: #151311;
-      --gold-ink: #f0d9a8;
-    }
   }
   * { box-sizing: border-box; }
   body {
@@ -144,7 +134,7 @@
   nav button.tab .ic { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
   nav button.tab:hover, .nav-sub button:hover { background: rgba(255,255,255,.05); color: var(--sidebar-ink); }
   nav button.tab.active, .nav-sub button.active {
-    background: rgba(198,154,75,.14);
+    background: rgba(59,130,246,.16);
     color: var(--gold);
     font-weight: 600;
   }
@@ -187,32 +177,39 @@
   header .hdr-center {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; justify-content: center;
   }
+  .search-wrap { position: relative; flex: 1; max-width: 460px; min-width: 200px; }
+  .search-wrap .search-ic { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 14px; }
   #globalSearch {
-    padding: 8px 12px;
+    padding: 9px 12px 9px 32px;
     border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--page);
+    border-radius: 10px;
+    background: var(--surface-2);
     color: var(--ink);
     font-size: 13px;
-    width: 220px;
-    max-width: 40vw;
+    width: 100%;
   }
-  .date-range { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); }
+  #globalSearch::placeholder { color: var(--muted); }
+  .date-range {
+    display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px;
+  }
+  .date-range .dr-ic { font-size: 12px; }
   .date-range input[type=date] {
-    padding: 7px 8px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--page);
+    padding: 3px 4px;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
     color: var(--ink);
     font-size: 12.5px;
+    color-scheme: dark;
   }
   header .hdr-right { display: flex; align-items: center; gap: 12px; }
   .bell-btn {
     position: relative;
-    width: 36px; height: 36px;
+    width: 38px; height: 38px;
     border-radius: 10px;
     border: 1px solid var(--border);
-    background: var(--surface);
+    background: var(--surface-2);
     color: var(--ink-2);
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
@@ -227,20 +224,23 @@
     padding: 0 3px;
   }
   .user-pill {
-    display: flex; align-items: center; gap: 8px;
-    padding: 6px 12px 6px 6px;
+    display: flex; align-items: center; gap: 9px;
+    padding: 5px 14px 5px 5px;
     border: 1px solid var(--border);
     border-radius: 999px;
-    background: var(--surface);
+    background: var(--surface-2);
     font-size: 12.5px;
     color: var(--ink-2);
   }
   .user-pill .avatar {
-    width: 24px; height: 24px; border-radius: 50%;
-    background: var(--sidebar-bg); color: var(--gold);
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--accent); color: #fff;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 700;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
   }
+  .user-pill-text { display: flex; flex-direction: column; line-height: 1.3; }
+  .user-pill-text strong { font-size: 12.5px; color: var(--ink); }
+  .user-pill-text small { font-size: 10.5px; color: var(--muted); }
   header .sync-pill {
     background: var(--surface-2);
     border: 1px solid var(--border);
@@ -249,21 +249,24 @@
     font-size: 12.5px;
     color: var(--ink-2);
   }
-  main { padding: 28px; max-width: 1320px; width: 100%; margin: 0 auto; }
+  main { padding: 28px; max-width: 1400px; width: 100%; margin: 0 auto; }
   .view { display: none; }
   .view.active { display: block; }
+  .dash-title { font-size: 26px; font-weight: 800; margin: 0 0 4px; }
+  .dash-sub { color: var(--muted); font-size: 13.5px; margin-bottom: 22px; }
   .cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 16px;
     margin-bottom: 28px;
   }
+  .kpi-cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
   .card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 18px 18px 16px;
-    box-shadow: 0 1px 2px rgba(20,18,14,.03);
+    padding: 16px 16px 14px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.2);
   }
   .card .icon-badge {
     width: 34px; height: 34px;
@@ -274,9 +277,17 @@
     font-size: 16px;
     margin-bottom: 12px;
   }
-  .card .label { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
-  .card .value { font-size: 26px; font-weight: 700; margin-top: 6px; }
-  .card .delta { font-size: 12px; margin-top: 6px; font-weight: 600; }
+  .card .icon-badge.c-blue { background: rgba(59,130,246,.16); color: var(--blue); }
+  .card .icon-badge.c-green { background: rgba(34,197,94,.16); color: var(--green); }
+  .card .icon-badge.c-purple { background: rgba(168,85,247,.16); color: var(--purple); }
+  .card .icon-badge.c-orange { background: rgba(249,115,22,.16); color: var(--orange); }
+  .card .icon-badge.c-red { background: rgba(239,68,68,.16); color: var(--red); }
+  .card .icon-badge.c-yellow { background: rgba(234,179,8,.16); color: var(--yellow); }
+  .card .icon-badge.c-indigo { background: rgba(99,102,241,.16); color: var(--indigo); }
+  .card .icon-badge.c-teal { background: rgba(20,184,166,.16); color: var(--teal); }
+  .card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+  .card .value { font-size: 24px; font-weight: 700; margin-top: 6px; }
+  .card .delta { font-size: 11.5px; margin-top: 6px; font-weight: 600; display: flex; align-items: center; gap: 4px; }
   .card .delta.up { color: var(--good); }
   .card .delta.down { color: var(--critical); }
   .card .delta.flat { color: var(--muted); }
@@ -324,18 +335,33 @@
   .global-health.serious { background: color-mix(in srgb, var(--serious) 16%, transparent); color: var(--serious); }
   .global-health.critical { background: color-mix(in srgb, var(--critical) 14%, transparent); color: var(--critical); }
   .global-health.neutral { background: var(--surface-2); color: var(--muted); }
-  .unit-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .unit-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
   .unit-tabs button {
+    display: flex; align-items: center; gap: 8px;
     border: 1px solid var(--border);
     background: var(--surface);
-    padding: 7px 14px;
-    border-radius: 999px;
+    padding: 9px 16px;
+    border-radius: 12px;
     font-size: 13px;
     cursor: pointer;
     color: var(--ink-2);
-    font-weight: 500;
+    font-weight: 600;
   }
-  .unit-tabs button.active { background: var(--sidebar-bg); color: var(--gold); border-color: var(--sidebar-bg); font-weight: 700; }
+  .unit-tabs button::before {
+    content: '🏭';
+    font-size: 14px;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 7px;
+    background: var(--surface-2);
+  }
+  .unit-tabs button.active {
+    background: color-mix(in srgb, var(--gold) 14%, var(--surface));
+    color: var(--ink);
+    border-color: var(--gold);
+    font-weight: 700;
+  }
+  .unit-tabs button.active::before { background: var(--gold); color: #0e1016; }
   .charts-row {
     display: grid;
     grid-template-columns: 2fr 1fr;
@@ -344,6 +370,15 @@
     align-items: stretch;
   }
   .charts-row.two-even { grid-template-columns: 1fr 1fr; }
+  .charts-row.three-col { grid-template-columns: 1fr 1fr 1fr; }
+  .charts-row.summary-row { grid-template-columns: 1fr 1fr 1fr; align-items: stretch; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .panel-head h3 { margin: 0; font-size: 14.5px; font-weight: 700; }
+  .ver-todos { font-size: 12px; font-weight: 600; color: var(--gold); cursor: pointer; text-decoration: none; white-space: nowrap; }
+  .ver-todos:hover { text-decoration: underline; }
+  .risk-map-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; margin-top: 12px; }
+  .risk-map-legend .lg-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+  .risk-map-legend .lg-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
   .chart-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -383,18 +418,39 @@
   .unit-panel {
     background: var(--surface);
     border: 1px solid var(--border);
-    border-top: 4px solid var(--muted);
     border-radius: 14px;
-    padding: 16px 18px 14px;
+    padding: 0 0 16px;
     box-shadow: 0 1px 2px rgba(20,18,14,.03);
+    overflow: hidden;
   }
-  .unit-panel.critical { border-top-color: var(--critical); }
-  .unit-panel.serious { border-top-color: var(--serious); }
-  .unit-panel.warning { border-top-color: var(--warning); }
-  .unit-panel.good { border-top-color: var(--good); }
-  .unit-panel.neutral { border-top-color: var(--muted); }
+  .unit-panel .unit-photo {
+    height: 84px;
+    background: linear-gradient(135deg, var(--surface-2), var(--surface));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+  .unit-panel .unit-badge {
+    position: absolute; top: 10px; right: 10px;
+    font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: .02em;
+  }
+  .unit-panel.critical .unit-badge { background: color-mix(in srgb, var(--critical) 20%, transparent); color: var(--critical); }
+  .unit-panel.serious .unit-badge { background: color-mix(in srgb, var(--serious) 20%, transparent); color: var(--serious); }
+  .unit-panel.warning .unit-badge { background: color-mix(in srgb, var(--warning) 20%, transparent); color: var(--warning); }
+  .unit-panel.good .unit-badge { background: color-mix(in srgb, var(--good) 20%, transparent); color: var(--good); }
+  .unit-panel.neutral .unit-badge { background: var(--surface-2); color: var(--muted); }
+  .unit-panel .unit-body { padding: 14px 18px 0; }
   .unit-panel h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-  .unit-panel .unit-sub { font-size: 11.5px; color: var(--muted); margin: 3px 0 14px; }
+  .unit-panel .unit-sub { font-size: 11.5px; color: var(--muted); margin: 3px 0 12px; }
+  .unit-panel .unit-bar-track { height: 6px; border-radius: 999px; background: var(--surface-2); overflow: hidden; margin-bottom: 14px; }
+  .unit-panel .unit-bar-fill { height: 100%; border-radius: 999px; }
+  .unit-panel.critical .unit-bar-fill { background: var(--critical); }
+  .unit-panel.serious .unit-bar-fill { background: var(--serious); }
+  .unit-panel.warning .unit-bar-fill { background: var(--warning); }
+  .unit-panel.good .unit-bar-fill { background: var(--good); }
+  .unit-panel.neutral .unit-bar-fill { background: var(--muted); }
   .unit-panel .sku-row {
     display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
     font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border);
@@ -588,9 +644,12 @@
     <div class="sub">CD Araçariguama</div>
   </div>
   <div class="hdr-center">
-    <input type="text" id="globalSearch" placeholder="Buscar SKU, descrição…">
+    <div class="search-wrap">
+      <span class="search-ic">⌕</span>
+      <input type="text" id="globalSearch" placeholder="Buscar material, código ou categoria...">
+    </div>
     <div class="date-range">
-      <span>Período:</span>
+      <span class="dr-ic">📅</span>
       <input type="date" id="dateFrom">
       <span>–</span>
       <input type="date" id="dateTo">
@@ -598,7 +657,7 @@
   </div>
   <div class="hdr-right">
     <button class="bell-btn" id="btnBell" title="Alertas em aberto" onclick="irParaAlertas()">🔔<span class="dot" id="bellCount" style="display:none">0</span></button>
-    <div class="user-pill"><span class="avatar">CD</span>CD Araçariguama</div>
+    <div class="user-pill"><span class="avatar">CD</span><span class="user-pill-text"><strong>CD Araçariguama</strong><small>Insumos Logísticos</small></span></div>
     <div class="sync-pill" id="lastSync">—</div>
   </div>
 </header>
@@ -607,14 +666,20 @@
 
   <!-- DASHBOARD -->
   <section class="view active" id="view-dashboard">
+    <h1 class="dash-title">Controle de Insumos Logísticos</h1>
+    <div class="dash-sub">Estoque, consumo e planejamento para todas as operações</div>
     <div class="unit-tabs" id="dashboardUnitTabs"></div>
     <div id="globalHealth"></div>
-    <div class="cards" id="kpiCards"></div>
+    <div class="cards kpi-cards" id="kpiCards"></div>
 
-    <div class="charts-row">
+    <div class="charts-row three-col">
       <div class="chart-card">
         <h3>Consumo — últimos 30 dias</h3>
         <div class="chart-wrap"><canvas id="chartConsumoLinha"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <h3>Estoque por unidade</h3>
+        <div class="chart-wrap"><canvas id="chartEstoqueBarra"></canvas></div>
       </div>
       <div class="chart-card">
         <h3>Consumo por categoria</h3>
@@ -622,32 +687,27 @@
       </div>
     </div>
 
-    <div class="charts-row two-even">
+    <div class="unit-panels" id="unidadePanels"></div>
+
+    <div class="charts-row summary-row">
       <div class="chart-card">
-        <h3>Estoque por unidade</h3>
-        <div class="chart-wrap"><canvas id="chartEstoqueBarra"></canvas></div>
+        <div class="panel-head"><h3>Materiais com maior risco de ruptura</h3><a class="ver-todos" onclick="activateView('planejamento-ruptura')">Ver todos →</a></div>
+        <div id="tabelaMaiorRisco"><div class="empty">Carregando…</div></div>
+      </div>
+      <div class="chart-card">
+        <div class="panel-head"><h3>Top materiais consumidos</h3><a class="ver-todos" onclick="activateView('consumo-tendencias')">Ver todos →</a></div>
+        <div id="tabelaTopConsumo"><div class="empty">Carregando…</div></div>
       </div>
       <div class="risk-map-panel">
-        <h3>Panorama de risco por unidade</h3>
-        <div class="hint">Visão simplificada por unidade (não representa um mapa geográfico preciso).</div>
-        <div class="risk-map-grid" id="riskMapGrid"></div>
+        <h3>Mapa de risco por unidade</h3>
+        <div class="hint">Ilustração esquemática, sem precisão geográfica.</div>
+        <div id="riskMapSvgWrap"></div>
+        <div class="risk-map-legend" id="riskMapLegend"></div>
       </div>
     </div>
 
-    <div class="toolbar"><h2>Saúde por unidade</h2></div>
-    <div class="unit-panels" id="unidadePanels"></div>
-
-    <div class="toolbar"><h2>Materiais com maior risco de ruptura</h2></div>
-    <div id="tabelaMaiorRisco"><div class="empty">Carregando…</div></div>
-
-    <div class="toolbar" style="margin-top:28px;"><h2>Top materiais consumidos</h2></div>
-    <div id="tabelaTopConsumo"><div class="empty">Carregando…</div></div>
-
-    <div class="toolbar" style="margin-top:28px;"><h2>Sugestão de reposição</h2></div>
+    <div class="toolbar" style="margin-top:8px;"><h2>Planejamento de reposição (sugestão)</h2></div>
     <div id="tabelaSugestaoReposicao"><div class="empty">Carregando…</div></div>
-
-    <div class="toolbar" style="margin-top:28px;"><h2>Detalhamento completo (todas as combinações)</h2></div>
-    <div id="semaforoTable"><div class="empty">Carregando…</div></div>
   </section>
 
   <!-- CADASTRO DE MATERIAIS -->
@@ -937,6 +997,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
+if (typeof Chart !== 'undefined') {
+  Chart.defaults.color = '#868ca0';
+  Chart.defaults.borderColor = 'rgba(255,255,255,.08)';
+  Chart.defaults.font.family = "system-ui, -apple-system, 'Segoe UI', sans-serif";
+}
+
 const SUPABASE_URL = 'https://lqmsgggabzkhhlpqaupq.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_BFbQ9ebONlSEPYdTPXOilQ_3XOXs23A';
 
@@ -1171,13 +1237,34 @@ async function loadDashboard() {
     const totalSaldo = rowsFiltradas.reduce((s, r) => s + (Number(r.saldo) || 0), 0);
     const totalPonto = rowsFiltradas.filter(r => r.status.key === 'serious' || r.status.key === 'critical').length;
 
-    document.getElementById('kpiCards').innerHTML = `
-      <div class="card"><div class="icon-badge">▢</div><div class="label">SKUs cadastrados</div><div class="value">${totalSkus}</div></div>
-      <div class="card"><div class="icon-badge" style="background:color-mix(in srgb, var(--critical) 16%, transparent); color:var(--critical)">▲</div><div class="label">Combinações críticas</div><div class="value" style="color:var(--critical)">${criticos}</div></div>
-      <div class="card"><div class="icon-badge" style="background:color-mix(in srgb, var(--serious) 16%, transparent); color:var(--serious)">⇩</div><div class="label">Precisam de reposição</div><div class="value" style="color:var(--serious)">${totalPonto}</div></div>
-      <div class="card"><div class="icon-badge" style="background:var(--surface-2); color:var(--muted)">⚙</div><div class="label">Sem parâmetro definido</div><div class="value" style="color:var(--muted)">${semParam}</div></div>
-      <div class="card"><div class="icon-badge">▥</div><div class="label">Saldo total (unid.)</div><div class="value">${fmtNum(totalSaldo)}</div></div>
-    `;
+    const nOkGeral = rowsFiltradas.filter(r => r.status.key === 'good').length;
+    const unidadesComMaterial = new Set(rowsFiltradas.filter(r => Number(r.saldo) >= 0 || r.saldo !== null).map(r => r.local_id)).size;
+    const coberturas = rowsFiltradas.map(r => r.cobertura_dias).filter(v => v !== null && v !== undefined && !isNaN(v));
+    const mediaCobertura = coberturas.length ? coberturas.reduce((s, v) => s + Number(v), 0) / coberturas.length : null;
+    const nSerio = rowsFiltradas.filter(r => r.status.key === 'serious').length;
+
+    const kpis = [
+      { cls: 'c-blue',   icon: '▢', label: 'SKUs cadastrados',          value: totalSkus },
+      { cls: 'c-red',    icon: '▲', label: 'Combinações críticas',      value: criticos,  valueColor: 'var(--critical)' },
+      { cls: 'c-orange', icon: '⇩', label: 'Precisam de reposição',     value: totalPonto, valueColor: 'var(--serious)' },
+      { cls: 'c-yellow', icon: '!', label: 'Em atenção (alto risco)',   value: nSerio,    valueColor: 'var(--warning)' },
+      { cls: 'c-green',  icon: '✓', label: 'SKUs em situação ok',       value: nOkGeral,  valueColor: 'var(--good)' },
+      { cls: 'c-indigo', icon: '⚙', label: 'Sem parâmetro definido',    value: semParam },
+      { cls: 'c-purple', icon: '⌂', label: 'Unidades com material',     value: unidadesComMaterial },
+      { cls: 'c-teal',   icon: '▥', label: 'Saldo total (unid.)',       value: fmtNum(totalSaldo) },
+    ];
+    document.getElementById('kpiCards').innerHTML = kpis.map(k => `
+      <div class="card">
+        <div class="icon-badge ${k.cls}">${k.icon}</div>
+        <div class="label">${k.label}</div>
+        <div class="value"${k.valueColor ? ` style="color:${k.valueColor}"` : ''}>${k.value}</div>
+      </div>`).join('')
+      + (mediaCobertura !== null ? `
+      <div class="card">
+        <div class="icon-badge c-blue">◷</div>
+        <div class="label">Cobertura média (dias)</div>
+        <div class="value">${fmtDec(mediaCobertura)}</div>
+      </div>` : '');
 
     // ---- Saúde global (pior status entre as combinações filtradas) ----
     const globalKey = rowsFiltradas.length
@@ -1194,14 +1281,30 @@ async function loadDashboard() {
       return { localId, nome: LOCAIS[localId], n: rowsUnidade.length, worst };
     });
     const dotColor = { critical: 'var(--critical)', serious: 'var(--serious)', warning: 'var(--warning)', good: 'var(--good)', neutral: 'var(--muted)' };
-    document.getElementById('riskMapGrid').innerHTML = riskByUnit.map(u => `
-      <div class="risk-map-row">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <span class="risk-map-dot" style="background:${dotColor[u.worst]}"></span>
-          <span class="rm-name">${u.nome}</span>
-        </div>
-        <span class="rm-count">${u.n ? `${u.n} SKU${u.n > 1 ? 's' : ''} · ${GLOBAL_HEALTH_LABEL[u.worst].split(' — ')[0].split(' ')[0]}` : 'sem materiais'}</span>
-      </div>
+    // Posições aproximadas (%) sobre um contorno esquemático do Brasil — não é um mapa geográfico
+    // preciso, apenas um posicionamento relativo para dar contexto visual às 5 unidades cadastradas.
+    const UNIT_POS = {
+      CD_SP:  { x: 46, y: 68 },
+      CD_RJ:  { x: 54, y: 66 },
+      CD_PE:  { x: 68, y: 38 },
+      DS_POA: { x: 40, y: 86 },
+      DS_BSB: { x: 50, y: 52 }
+    };
+    const svgDots = riskByUnit.map(u => {
+      const pos = UNIT_POS[u.localId] || { x: 50, y: 50 };
+      const cor = dotColor[u.worst];
+      return `<circle cx="${pos.x}" cy="${pos.y}" r="2.6" fill="${cor}" stroke="#0e1016" stroke-width="0.6">
+        <title>${u.nome} — ${u.n ? `${u.n} SKU${u.n > 1 ? 's' : ''}` : 'sem materiais'}</title>
+      </circle>`;
+    }).join('');
+    document.getElementById('riskMapSvgWrap').innerHTML = `
+      <svg viewBox="0 0 100 100" style="width:100%; height:180px;" preserveAspectRatio="xMidYMid meet">
+        <path d="M62,6 C74,10 82,20 84,32 C86,44 80,50 82,58 C84,66 78,72 72,78 C66,84 60,92 50,94 C40,96 34,88 32,80 C30,72 22,70 20,62 C18,54 24,50 22,42 C20,34 14,30 18,22 C22,14 34,14 42,10 C50,6 56,4 62,6 Z"
+          fill="var(--surface-2)" stroke="var(--border)" stroke-width="0.6" />
+        ${svgDots}
+      </svg>`;
+    document.getElementById('riskMapLegend').innerHTML = riskByUnit.map(u => `
+      <span class="lg-item"><span class="lg-dot" style="background:${dotColor[u.worst]}"></span>${u.nome}${u.n ? ` (${u.n})` : ''}</span>
     `).join('');
 
     // ---- Charts ----
@@ -1217,8 +1320,12 @@ async function loadDashboard() {
       if (rowsUnidade.length === 0) {
         return `
           <div class="unit-panel neutral">
-            <h3>${nome}</h3>
-            <div class="unit-sub">Nenhuma caixa cadastrada nesta unidade</div>
+            <div class="unit-photo">🏭<span class="unit-badge">sem dados</span></div>
+            <div class="unit-body">
+              <h3>${nome}</h3>
+              <div class="unit-sub">Nenhuma caixa cadastrada nesta unidade</div>
+              <div class="unit-bar-track"><div class="unit-bar-fill" style="width:0%"></div></div>
+            </div>
           </div>`;
       }
 
@@ -1258,23 +1365,28 @@ async function loadDashboard() {
         ? linhasDetalhe + linhaResumoOk
         : (linhaResumoOk || '<div class="empty-panel">Tudo OK nesta unidade</div>');
 
+      const pctOk = Math.round((nOk / rowsUnidade.length) * 100);
       return `
         <div class="unit-panel ${worst}">
-          <h3>${nome} <span class="badge ${worst}">${rowsUnidade.length} SKU${rowsUnidade.length > 1 ? 's' : ''}</span></h3>
-          <div class="unit-sub">${resumoPartes}</div>
-          ${corpo}
+          <div class="unit-photo">🏭<span class="unit-badge">${GLOBAL_HEALTH_LABEL[worst].split(' — ')[0]}</span></div>
+          <div class="unit-body">
+            <h3>${nome} <span class="badge ${worst}">${rowsUnidade.length} SKU${rowsUnidade.length > 1 ? 's' : ''}</span></h3>
+            <div class="unit-sub">${resumoPartes}</div>
+            <div class="unit-bar-track"><div class="unit-bar-fill" style="width:${pctOk}%"></div></div>
+            ${corpo}
+          </div>
         </div>`;
     }).join('');
     document.getElementById('unidadePanels').innerHTML = unidadesPanelsHtml;
 
-    // ---- Materiais com maior risco de ruptura ----
+    // ---- Materiais com maior risco de ruptura (prévia compacta — lista completa em Planejamento > Ruptura) ----
     const maiorRisco = rowsFiltradas.filter(r => ['critical', 'serious'].includes(r.status.key))
-      .sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]).slice(0, 15);
+      .sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]).slice(0, 5);
     document.getElementById('tabelaMaiorRisco').innerHTML = maiorRisco.length ? `
-      <table><thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Cobertura (dias)</th><th>Status</th></tr></thead>
+      <table><thead><tr><th>SKU</th><th>Local</th><th>Cobertura</th><th>Status</th></tr></thead>
       <tbody>${maiorRisco.map(r => `<tr>
-        <td>${r.sku || '—'}</td><td>${r.descricao || '—'}</td><td>${LOCAIS[r.local_id] || r.local_id}</td>
-        <td>${fmtNum(r.saldo)}</td><td>${fmtDec(r.cobertura_dias)}</td>
+        <td>${r.sku || '—'}</td><td>${LOCAIS[r.local_id] || r.local_id}</td>
+        <td>${fmtDec(r.cobertura_dias)}d</td>
         <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
       </tr>`).join('')}</tbody></table>`
       : '<div class="empty">Nenhum material em risco de ruptura no momento.</div>';
@@ -1298,39 +1410,17 @@ async function loadDashboard() {
       : '<div class="empty">Nenhum material precisa de reposição no momento.</div>';
 
     if (rowsFiltradas.length === 0) {
-      document.getElementById('semaforoTable').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda. Assim que a planilha de consumo sincronizar (ou uma movimentação for lançada), o estoque aparece aqui.</div>';
+      document.getElementById('tabelaSugestaoReposicao').innerHTML = '<div class="empty">Nenhuma movimentação registrada ainda. Assim que a planilha de consumo sincronizar (ou uma movimentação for lançada), o estoque aparece aqui.</div>';
       document.getElementById('lastSync').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
       return;
     }
 
-    rowsFiltradas.sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
-    document.getElementById('semaforoTable').innerHTML = `
-      <table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Mínimo</th><th>Segurança</th><th>Consumo médio/dia</th><th>Cobertura (dias)</th><th>Ponto de pedido</th><th>Status</th></tr></thead>
-        <tbody>
-          ${rowsFiltradas.map(r => `
-            <tr>
-              <td>${r.sku || '—'}</td>
-              <td>${r.descricao || '—'}</td>
-              <td>${LOCAIS[r.local_id] || r.local_id}</td>
-              <td>${fmtNum(r.saldo)}</td>
-              <td>${fmtNum(r.minimo)}</td>
-              <td>${fmtNum(r.seguranca)}</td>
-              <td>${fmtDec(r.consumo_medio_diario)}</td>
-              <td>${fmtDec(r.cobertura_dias)}</td>
-              <td>${fmtNum(r.ponto_pedido)}</td>
-              <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    `;
     document.getElementById('lastSync').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
     filterVisibleTables();
   } catch (e) {
     document.getElementById('globalHealth').innerHTML = '';
     document.getElementById('unidadePanels').innerHTML = '';
-    document.getElementById('semaforoTable').innerHTML = `<div class="empty">Erro ao carregar: ${e.message} <button class="secondary" style="margin-left:10px" onclick="loadDashboard()">Tentar novamente</button></div>`;
+    document.getElementById('kpiCards').innerHTML = `<div class="empty">Erro ao carregar: ${e.message} <button class="secondary" style="margin-left:10px" onclick="loadDashboard()">Tentar novamente</button></div>`;
   }
 }
 
@@ -1355,7 +1445,7 @@ async function renderChartsDashboard(rowsFiltradas) {
       const oldEmpty = wrapLinha.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
       _chartConsumoLinha = new Chart(wrapLinha, {
         type: 'line',
-        data: { labels: labels.map(d => d.slice(5)), datasets: [{ label: 'Consumo', data: labels.map(d => porDia[d]), borderColor: '#c69a4b', backgroundColor: 'rgba(198,154,75,.15)', fill: true, tension: .25 }] },
+        data: { labels: labels.map(d => d.slice(5)), datasets: [{ label: 'Consumo', data: labels.map(d => porDia[d]), borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,.15)', fill: true, tension: .25 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
     }
@@ -1380,7 +1470,7 @@ async function renderChartsDashboard(rowsFiltradas) {
       const oldEmpty = wrapDonut.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
       _chartConsumoDonut = new Chart(wrapDonut, {
         type: 'doughnut',
-        data: { labels: cats, datasets: [{ data: cats.map(c => porCategoria[c]), backgroundColor: ['#c69a4b', '#2a78d6', '#0ca30c', '#ec835a', '#d03b3b', '#8b8983'] }] },
+        data: { labels: cats, datasets: [{ data: cats.map(c => porCategoria[c]), backgroundColor: ['#3b82f6', '#a855f7', '#22c55e', '#f97316', '#ef4444', '#868ca0'] }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 } } } } }
       });
     }
@@ -1400,7 +1490,7 @@ async function renderChartsDashboard(rowsFiltradas) {
     const oldEmpty = wrapBarra.closest('.chart-card').querySelector('.chart-empty'); if (oldEmpty) oldEmpty.remove();
     _chartEstoqueBarra = new Chart(wrapBarra, {
       type: 'bar',
-      data: { labels: Object.keys(porUnidade).map(l => LOCAIS[l]), datasets: [{ label: 'Saldo', data: Object.values(porUnidade), backgroundColor: '#2a78d6' }] },
+      data: { labels: Object.keys(porUnidade).map(l => LOCAIS[l]), datasets: [{ label: 'Saldo', data: Object.values(porUnidade), backgroundColor: '#3b82f6', borderRadius: 4 }] },
       options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
     });
   }
@@ -1420,10 +1510,10 @@ async function carregarTopConsumo() {
     const caixaById = Object.fromEntries(caixas.map(c => [c.id, c]));
     const porCaixa = {};
     consumo.forEach(c => { porCaixa[c.caixa_id] = (porCaixa[c.caixa_id] || 0) + Number(c.quantidade || 0); });
-    const top = Object.entries(porCaixa).map(([id, total]) => ({ ...caixaById[id], total })).filter(r => r.sku).sort((a, b) => b.total - a.total).slice(0, 10);
+    const top = Object.entries(porCaixa).map(([id, total]) => ({ ...caixaById[id], total })).filter(r => r.sku).sort((a, b) => b.total - a.total).slice(0, 5);
     document.getElementById('tabelaTopConsumo').innerHTML = top.length ? `
-      <table><thead><tr><th>SKU</th><th>Descrição</th><th>Consumo (30 dias)</th></tr></thead>
-      <tbody>${top.map(r => `<tr><td>${r.sku}</td><td>${r.descricao || '—'}</td><td>${fmtNum(r.total)}</td></tr>`).join('')}</tbody></table>`
+      <table><thead><tr><th>SKU</th><th>Consumo (30d)</th></tr></thead>
+      <tbody>${top.map(r => `<tr><td>${r.sku}</td><td>${fmtNum(r.total)}</td></tr>`).join('')}</tbody></table>`
       : '<div class="empty">Nenhum consumo registrado nos últimos 30 dias ainda.</div>';
   } catch (e) {
     document.getElementById('tabelaTopConsumo').innerHTML = `<div class="empty">Erro ao carregar: ${e.message}</div>`;
@@ -1710,7 +1800,7 @@ async function loadConsumoPeriodo(granularidade, chartId, tableId) {
       destroyChart(_chartConsumoPeriodo);
       _chartConsumoPeriodo = new Chart(canvas, {
         type: 'bar',
-        data: { labels, datasets: [{ label: 'Consumo', data: labels.map(l => grupos[l]), backgroundColor: '#2a78d6' }] },
+        data: { labels, datasets: [{ label: 'Consumo', data: labels.map(l => grupos[l]), backgroundColor: '#3b82f6', borderRadius: 4 }] },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true } } }
       });
     }
