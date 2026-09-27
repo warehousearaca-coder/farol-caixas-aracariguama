@@ -621,22 +621,49 @@ async function loadView(view) {
 const SEVERITY = { critical: 4, serious: 3, warning: 2, neutral: 1, good: 0 };
 const GLOBAL_HEALTH_LABEL = {
   critical: 'Crítico — ação imediata necessária',
-  serious: 'Abaixo do mínimo em uma ou mais unidades',
+  serious: 'Alto risco — reposição necessária em uma ou mais unidades',
   warning: 'Atenção em uma ou mais unidades',
   neutral: 'Parâmetros pendentes de definição',
   good: 'Operação saudável — todos os estoques OK'
 };
 
+// Classificação de risco (MVP): usa cobertura/ponto de pedido quando o histórico de consumo já existe
+// (estoque_planejamento), com fallback para a regra simples de mínimo/segurança enquanto não há dado suficiente.
+function classificaRisco(e) {
+  const saldo = Number(e.saldo) || 0;
+  const minimo = e.estoque_minimo;
+  const seguranca = e.estoque_seguranca;
+  const pontoPedido = e.ponto_pedido;
+  const coberturaDias = e.cobertura_dias;
+  const leadTime = e.lead_time_dias;
+  const maximo = e.estoque_maximo;
+
+  const temParametro = minimo !== null && minimo !== undefined || seguranca !== null && seguranca !== undefined || pontoPedido !== null && pontoPedido !== undefined;
+  if (!temParametro) return { key: 'neutral', label: 'Sem parâmetro' };
+
+  if (saldo <= 0) return { key: 'critical', label: 'Crítico — ruptura' };
+  if (seguranca !== null && seguranca !== undefined && saldo <= seguranca) return { key: 'critical', label: 'Crítico' };
+  if (pontoPedido !== null && pontoPedido !== undefined && saldo <= pontoPedido) return { key: 'serious', label: 'Alto risco — repor' };
+  if (minimo !== null && minimo !== undefined && saldo <= minimo) return { key: 'serious', label: 'Abaixo do mínimo' };
+  if (coberturaDias !== null && coberturaDias !== undefined && leadTime !== null && leadTime !== undefined && coberturaDias <= leadTime * 1.5) {
+    return { key: 'warning', label: `Atenção — cobertura de ${coberturaDias.toFixed(1)}d` };
+  }
+  if (minimo !== null && minimo !== undefined && saldo <= minimo * 1.3) return { key: 'warning', label: 'Atenção' };
+  if (maximo !== null && maximo !== undefined && saldo > maximo) return { key: 'warning', label: 'Excesso de estoque' };
+  return { key: 'good', label: 'Normal' };
+}
+
 async function loadDashboard() {
   try {
     const [caixas, status] = await Promise.all([
       sb('caixas_atual?select=id,sku'),
-      sb('estoque_status?select=*')
+      sb('estoque_planejamento?select=*')
     ]);
 
-    // estoque_status já resolve o mínimo/segurança por SKU+Local (com fallback pro valor global enquanto o SKU não é migrado)
+    // estoque_planejamento já resolve o mínimo/segurança por SKU+Local e complementa com
+    // consumo médio, cobertura em dias e ponto de pedido (quando já há histórico suficiente).
     const rows = status.map(e => {
-      const s = statusOf(e.saldo, e.estoque_minimo, e.estoque_seguranca);
+      const s = classificaRisco(e);
       return { ...e, minimo: e.estoque_minimo, seguranca: e.estoque_seguranca, status: s };
     });
 
@@ -683,20 +710,20 @@ async function loadDashboard() {
       const nSemParam = rowsUnidade.filter(r => r.status.key === 'neutral').length;
       const resumoPartes = [
         nCritico && `${nCritico} crítico${nCritico > 1 ? 's' : ''}`,
-        nSerio && `${nSerio} abaixo do mínimo`,
+        nSerio && `${nSerio} em alto risco`,
         nAtencao && `${nAtencao} em atenção`,
         nOk && `${nOk} ok`,
         nSemParam && `${nSemParam} sem parâmetro`
       ].filter(Boolean).join(' · ');
 
-      // Só detalha linha a linha o que exige atenção (crítico/abaixo do mínimo/atenção);
+      // Só detalha linha a linha o que exige atenção (crítico/alto risco/atenção);
       // OK e sem parâmetro entram como uma linha-resumo, para não poluir o quadro.
       const emAtencao = rowsUnidade.filter(r => ['critical', 'serious', 'warning'].includes(r.status.key));
       const semAtencao = rowsUnidade.filter(r => ['good', 'neutral'].includes(r.status.key));
 
       const linhasDetalhe = emAtencao.map(r => `
         <div class="sku-row">
-          <span class="sku-name">${r.sku || '—'} <span class="sku-desc">${r.descricao || ''}</span></span>
+          <span class="sku-name">${r.sku || '—'} <span class="sku-desc">${r.descricao || ''}${r.cobertura_dias !== null && r.cobertura_dias !== undefined ? ` · cobertura ${Number(r.cobertura_dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 })}d` : ''}</span></span>
           <span class="sku-right">
             <span class="sku-saldo">${fmtNum(r.saldo)}</span>
             <span class="badge ${r.status.key}">${r.status.label}</span>
@@ -725,10 +752,10 @@ async function loadDashboard() {
       return;
     }
 
-    rows.sort((a, b) => (a.status.key === 'critical' ? -1 : 1));
+    rows.sort((a, b) => SEVERITY[b.status.key] - SEVERITY[a.status.key]);
     document.getElementById('semaforoTable').innerHTML = `
       <table>
-        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Mínimo</th><th>Segurança</th><th>Status</th></tr></thead>
+        <thead><tr><th>SKU</th><th>Descrição</th><th>Local</th><th>Saldo</th><th>Mínimo</th><th>Segurança</th><th>Consumo médio/dia</th><th>Cobertura (dias)</th><th>Ponto de pedido</th><th>Status</th></tr></thead>
         <tbody>
           ${rows.map(r => `
             <tr>
@@ -738,6 +765,9 @@ async function loadDashboard() {
               <td>${fmtNum(r.saldo)}</td>
               <td>${fmtNum(r.minimo)}</td>
               <td>${fmtNum(r.seguranca)}</td>
+              <td>${r.consumo_medio_diario !== null && r.consumo_medio_diario !== undefined ? Number(r.consumo_medio_diario).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}</td>
+              <td>${r.cobertura_dias !== null && r.cobertura_dias !== undefined ? Number(r.cobertura_dias).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) : '—'}</td>
+              <td>${fmtNum(r.ponto_pedido)}</td>
               <td><span class="badge ${r.status.key}">${r.status.label}</span></td>
             </tr>
           `).join('')}
