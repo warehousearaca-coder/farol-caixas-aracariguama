@@ -239,14 +239,16 @@
   .unit-panel h3 { margin: 0; font-size: 15px; font-weight: 700; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
   .unit-panel .unit-sub { font-size: 11.5px; color: var(--muted); margin: 3px 0 14px; }
   .unit-panel .sku-row {
-    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
     font-size: 13px; padding: 7px 0; border-bottom: 1px solid var(--border);
   }
   .unit-panel .sku-row:last-child { border-bottom: none; }
-  .unit-panel .sku-row .sku-name { font-weight: 600; white-space: nowrap; }
+  .unit-panel .sku-row .sku-name {
+    font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
   .unit-panel .sku-row .sku-desc { color: var(--muted); font-size: 11.5px; font-weight: 400; }
-  .unit-panel .sku-row .sku-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
-  .unit-panel .sku-row .sku-saldo { color: var(--muted); font-size: 12px; min-width: 52px; text-align: right; }
+  .unit-panel .sku-row .sku-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .unit-panel .sku-row .sku-saldo { color: var(--muted); font-size: 12px; min-width: 44px; text-align: right; }
   .unit-panel .sku-summary { font-size: 12px; color: var(--muted); padding-top: 8px; margin-top: 4px; }
   .unit-panel .sku-summary:first-child { padding-top: 0; margin-top: 0; }
   .unit-panel .empty-panel { font-size: 12px; color: var(--good); }
@@ -333,6 +335,7 @@
     <button class="tab" data-view="estoque"><span class="ic">▤</span>Estoque Atual</button>
     <button class="tab" data-view="movimentacoes"><span class="ic">⇄</span>Movimentações</button>
     <button class="tab" data-view="importar"><span class="ic">⇧</span>Importar Excel</button>
+    <button class="tab" data-view="importar-estoque"><span class="ic">⇩</span>Importar Estoque (Snapshot)</button>
     <button class="tab" data-view="relatorios"><span class="ic">▥</span>Relatórios</button>
     <button class="tab" data-view="alertas"><span class="ic">▲</span>Alertas</button>
   </nav>
@@ -393,6 +396,15 @@
     <br>
     <input type="file" id="fileExcel" accept=".xlsx,.xls">
     <div id="importPreview" style="margin-top:16px;"></div>
+  </section>
+
+  <!-- IMPORTAR ESTOQUE (SNAPSHOT) -->
+  <section class="view" id="view-importar-estoque">
+    <div class="toolbar"><h2>Importar Estoque (Snapshot)</h2></div>
+    <div class="status-msg">Suba a planilha do estoque atual (colunas: DATA, LOCAL, SKU (ou CÓDIGO), ESTOQUE (ou SALDO)). O sistema compara com o snapshot anterior de cada Material + Local e calcula sozinho se foi consumo (saldo caiu) ou entrada (saldo subiu) — nada é lançado manualmente. Cada arquivo só pode ser processado uma vez. Nada é gravado até você confirmar.</div>
+    <br>
+    <input type="file" id="fileEstoqueSnapshot" accept=".xlsx,.xls">
+    <div id="importEstoquePreview" style="margin-top:16px;"></div>
   </section>
 
   <!-- RELATÓRIOS -->
@@ -1034,6 +1046,150 @@ async function confirmarImport() {
   prev.innerHTML = `<div class="status-msg ok">Importação concluída: ${ok} lançamento(s) gravados${fail ? ', ' + fail + ' com erro' : ''}.</div>`;
   document.getElementById('fileExcel').value = '';
   _importParsed = [];
+  loadEstoque(); loadDashboard();
+}
+
+// ---------- Importar Estoque (Snapshot) ----------
+let _importEstoqueParsed = [];
+let _importEstoqueHash = null;
+
+async function sha256Hex(buf) {
+  const digest = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+document.getElementById('fileEstoqueSnapshot').addEventListener('change', async (ev) => {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const prev = document.getElementById('importEstoquePreview');
+  prev.innerHTML = '<div class="empty">Lendo arquivo…</div>';
+  try {
+    const buf = await file.arrayBuffer();
+
+    // Proteção contra reprocessar a mesma base: hash do conteúdo do arquivo.
+    const hash = await sha256Hex(buf);
+    const jaProcessado = await sb(`import_history?select=id,criado_em,data_base&arquivo_hash=eq.${hash}`);
+    if (jaProcessado.length) {
+      const h = jaProcessado[0];
+      prev.innerHTML = `<div class="status-msg error">⚠️ Esta base já foi processada em ${new Date(h.criado_em).toLocaleString('pt-BR')}${h.data_base ? ' (data-base ' + h.data_base + ')' : ''}. Nenhum dado novo — nada será importado de novo a partir deste arquivo.</div>`;
+      document.getElementById('fileEstoqueSnapshot').value = '';
+      return;
+    }
+    _importEstoqueHash = hash;
+
+    const [caixas, estoqueAtual] = await Promise.all([
+      sb('caixas_atual?select=id,sku'),
+      sb('estoque_atual?select=caixa_id,local_id,saldo')
+    ]);
+    const caixaIdBySku = {};
+    caixas.forEach(c => { caixaIdBySku[(c.sku || '').toString().trim().toUpperCase()] = c.id; });
+    const saldoAnteriorMap = {};
+    estoqueAtual.forEach(e => { saldoAnteriorMap[`${e.caixa_id}|${e.local_id}`] = Number(e.saldo) || 0; });
+
+    const wb = XLSX.read(buf, { type: 'array', cellDates: true });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    const parsed = [];
+    const erros = [];
+    rows.forEach((r, idx) => {
+      const dataRaw = r['DATA'] ?? r['Data'] ?? r['data'];
+      const localRaw = r['LOCAL'] ?? r['Local'] ?? r['local'];
+      const skuRaw = r['SKU'] ?? r['Sku'] ?? r['sku'] ?? r['CÓDIGO'] ?? r['Código'] ?? r['CODIGO'] ?? r['Codigo'] ?? r['codigo'];
+      const estoqueRaw = r['ESTOQUE'] ?? r['Estoque'] ?? r['estoque'] ?? r['SALDO'] ?? r['Saldo'] ?? r['saldo'];
+      if (!dataRaw || !localRaw || !skuRaw) return;
+      let dataStr;
+      if (dataRaw instanceof Date) dataStr = dataRaw.toISOString().slice(0, 10);
+      else dataStr = String(dataRaw).trim();
+      const localId = normalizaLocal(localRaw);
+      if (!localId) { erros.push(`Linha ${idx + 2}: local "${localRaw}" não reconhecido.`); return; }
+      const sku = String(skuRaw).trim().toUpperCase();
+      const caixa_id = caixaIdBySku[sku];
+      if (!caixa_id) { erros.push(`Linha ${idx + 2}: SKU "${skuRaw}" não cadastrado.`); return; }
+      const saldoAtual = Number(estoqueRaw);
+      if (estoqueRaw === '' || isNaN(saldoAtual)) { erros.push(`Linha ${idx + 2}: estoque inválido para ${sku}.`); return; }
+      const key = `${caixa_id}|${localId}`;
+      const saldoAnterior = key in saldoAnteriorMap ? saldoAnteriorMap[key] : null;
+      const diff = saldoAnterior === null ? null : saldoAtual - saldoAnterior;
+      let tipo;
+      if (diff === null) tipo = 'PRIMEIRO_REGISTRO';
+      else if (diff > 0) tipo = 'Entrada';
+      else if (diff < 0) tipo = 'Consumo';
+      else tipo = 'SEM_MOVIMENTACAO';
+      parsed.push({ data: dataStr, local_id: localId, sku, caixa_id, saldo_anterior: saldoAnterior, saldo_atual: saldoAtual, diff, tipo });
+    });
+
+    _importEstoqueParsed = parsed;
+    const comMovimento = parsed.filter(p => p.tipo === 'Entrada' || p.tipo === 'Consumo').length;
+    let html = `<div class="status-msg">${parsed.length} linha(s) lida(s), ${comMovimento} com movimentação detectada${erros.length ? ', ' + erros.length + ' linha(s) com erro (ignoradas)' : ''}.</div>`;
+    if (erros.length) html += `<div class="status-msg error">${erros.slice(0, 30).join('<br>')}${erros.length > 30 ? '<br>…' : ''}</div>`;
+    if (parsed.length) {
+      html += `<br><table><thead><tr><th>Data</th><th>Local</th><th>SKU</th><th>Estoque anterior</th><th>Estoque atual</th><th>Diferença</th><th>Tipo</th></tr></thead><tbody>
+        ${parsed.slice(0, 50).map(p => `<tr>
+          <td>${p.data}</td><td>${LOCAIS[p.local_id]}</td><td>${p.sku}</td>
+          <td>${p.saldo_anterior === null ? '—' : fmtNum(p.saldo_anterior)}</td>
+          <td>${fmtNum(p.saldo_atual)}</td>
+          <td>${p.diff === null ? '—' : fmtNum(p.diff)}</td>
+          <td>${p.tipo === 'PRIMEIRO_REGISTRO' ? '<span class="badge neutral">1º registro</span>' : p.tipo === 'SEM_MOVIMENTACAO' ? '<span class="badge good">sem alteração</span>' : `<span class="badge ${p.tipo === 'Entrada' ? 'good' : 'warning'}">${p.tipo}</span>`}</td>
+        </tr>`).join('')}
+      </tbody></table>${parsed.length > 50 ? `<div class="status-msg">Mostrando 50 de ${parsed.length}.</div>` : ''}
+      <br><button class="primary" id="btnConfirmarImportEstoque">Confirmar importação (${parsed.length} linha(s), ${comMovimento} movimentação(ões))</button>`;
+    }
+    prev.innerHTML = html;
+    if (parsed.length) document.getElementById('btnConfirmarImportEstoque').addEventListener('click', confirmarImportEstoque);
+  } catch (e) {
+    prev.innerHTML = `<div class="empty">Erro ao ler arquivo: ${e.message}</div>`;
+  }
+});
+
+async function confirmarImportEstoque() {
+  const prev = document.getElementById('importEstoquePreview');
+  const parsed = _importEstoqueParsed;
+  let ok = 0, fail = 0, naoEncontrados = 0;
+  prev.innerHTML = `<div class="empty">Importando 0 / ${parsed.length}…</div>`;
+  let dataBase = parsed.length ? parsed[0].data : null;
+
+  for (const p of parsed) {
+    try {
+      // Snapshot bruto sempre é gravado (auditoria + base para o próximo diff), mesmo sem movimentação.
+      await sb(`estoque_snapshots?on_conflict=data,caixa_id,local_id`, {
+        method: 'POST',
+        headers: { 'Prefer': 'return=representation,resolution=merge-duplicates' },
+        body: JSON.stringify({ data: p.data, caixa_id: p.caixa_id, local_id: p.local_id, saldo: p.saldo_atual })
+      });
+
+      if (p.tipo === 'Entrada' || p.tipo === 'Consumo') {
+        const qtd = Math.abs(p.diff);
+        const mov = await sb('movimentacoes', { method: 'POST', body: JSON.stringify({
+          data: p.data, caixa_id: p.caixa_id, local_id: p.local_id,
+          tipo_movimento: p.tipo, entrada: p.tipo === 'Entrada' ? qtd : 0, saida: p.tipo === 'Consumo' ? qtd : 0,
+          origem: 'importacao_planilha', observacao: null
+        })});
+        const movId = Array.isArray(mov) ? mov[0].id : mov.id;
+        if (p.tipo === 'Consumo') {
+          await sb('consumo_diario', { method: 'POST', body: JSON.stringify({
+            data: p.data, local_id: p.local_id, caixa_id: p.caixa_id,
+            quantidade: qtd, fonte: 'importacao_planilha', processado: true,
+            movimentacao_id: movId
+          })});
+        }
+      }
+      ok++;
+    } catch (e) { fail++; }
+    prev.innerHTML = `<div class="empty">Importando ${ok + fail} / ${parsed.length}…</div>`;
+  }
+
+  try {
+    await sb('import_history', { method: 'POST', body: JSON.stringify({
+      arquivo_hash: _importEstoqueHash, data_base: dataBase,
+      total_linhas: parsed.length, materiais_novos: 0, materiais_nao_encontrados: naoEncontrados
+    })});
+  } catch (e) { /* não bloqueia a importação se o registro de histórico falhar */ }
+
+  prev.innerHTML = `<div class="status-msg ok">Importação concluída: ${ok} linha(s) processada(s)${fail ? ', ' + fail + ' com erro' : ''}.</div>`;
+  document.getElementById('fileEstoqueSnapshot').value = '';
+  _importEstoqueParsed = [];
+  _importEstoqueHash = null;
   loadEstoque(); loadDashboard();
 }
 
